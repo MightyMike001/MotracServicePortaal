@@ -31,9 +31,17 @@ function wireEvents() {
     state.fleetFilter.location = event.target.value;
     renderFleet();
   });
-  $('#searchBtn').addEventListener('click', () => {
+  const applyFleetSearch = () => {
     state.fleetFilter.query = $('#searchInput').value;
     renderFleet();
+  };
+
+  $('#searchBtn').addEventListener('click', applyFleetSearch);
+  $('#searchInput').addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyFleetSearch();
+    }
   });
 
   document.addEventListener('click', event => {
@@ -197,7 +205,17 @@ function wireEvents() {
   });
 
   $('#activityLocationFilter').addEventListener('change', renderActivity);
-  $('#activitySearchBtn').addEventListener('click', renderActivity);
+  const applyActivitySearch = () => {
+    renderActivity();
+  };
+
+  $('#activitySearchBtn').addEventListener('click', applyActivitySearch);
+  $('#activitySearchInput').addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyActivitySearch();
+    }
+  });
 
   $('#btnAddUser').addEventListener('click', () => {
     state.editUserId = null;
