@@ -1,0 +1,7 @@
+/* Simple menu underline animation */
+.tab-active { position: relative; }
+.tab-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -8px; height: 3px; background: #E30613; border-radius: 9999px; }
+.kebab:hover .kebab-menu { display: block; }
+.modal { display: none; }
+.modal.show { display: flex; }
+.truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
