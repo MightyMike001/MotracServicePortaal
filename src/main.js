@@ -8,6 +8,14 @@ import { openDetail, setDetailTab } from './modules/detail.js';
 import { setMainTab } from './modules/navigation.js';
 
 function wireEvents() {
+  function closeKebabMenus(except = null) {
+    $$('.kebab-menu').forEach(menu => {
+      if (menu !== except) {
+        menu.classList.add('hidden');
+      }
+    });
+  }
+
   $('#userBtn').addEventListener('click', () => $('#userMenu').classList.toggle('hidden'));
   $('#cancelUserMenu').addEventListener('click', () => $('#userMenu').classList.add('hidden'));
   document.addEventListener('click', event => {
@@ -36,8 +44,27 @@ function wireEvents() {
   });
 
   document.addEventListener('click', event => {
+    const button = event.target.closest('.kebab > button');
+    if (button) {
+      const menu = button.parentElement.querySelector('.kebab-menu');
+      const shouldShow = menu && menu.classList.contains('hidden');
+      closeKebabMenus(menu);
+      if (menu && shouldShow) {
+        menu.classList.remove('hidden');
+      }
+      return;
+    }
+
+    if (!event.target.closest('.kebab-menu')) {
+      closeKebabMenus();
+    }
+  });
+
+  document.addEventListener('click', event => {
     const actionButton = event.target.closest('[data-action]');
     if (!actionButton) return;
+
+    closeKebabMenus();
 
     const action = actionButton.dataset.action;
     const id = actionButton.dataset.id || state.selectedTruckId;
@@ -185,6 +212,8 @@ function wireEvents() {
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-user-action]');
     if (!button) return;
+
+    closeKebabMenus();
 
     const id = button.dataset.id;
     if (button.dataset.userAction === 'edit') {
