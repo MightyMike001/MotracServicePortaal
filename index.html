@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Motrac Serviceportal – Prototype</title>
+  <!-- TailwindCSS CDN for rapid prototyping -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            motrac: {
+              red: '#E30613',
+              dark: '#1B1B1B',
+              gray: '#F3F4F6'
+            }
+          },
+          boxShadow: {
+            soft: '0 10px 20px rgba(0,0,0,0.08)'
+          },
+          borderRadius: {
+            xl: '1rem'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Simple menu underline animation */
+    .tab-active{ position: relative; }
+    .tab-active::after{ content:''; position:absolute; left:0; right:0; bottom:-8px; height:3px; background:#E30613; border-radius:9999px; }
+    .kebab:hover .kebab-menu{ display:block; }
+    .modal{ display:none; }
+    .modal.show{ display:flex; }
+    .truncate-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  </style>
+</head>
+<body class="bg-motrac-gray text-gray-900">
+  <!-- Global App Wrapper -->
+  <div id="app" class="min-h-screen">
+    <!-- Top Navigation -->
+    <header class="bg-white shadow-soft">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 bg-motrac-red rounded-lg"></div>
+          <div class="leading-tight">
+            <h1 class="font-semibold">Motrac Serviceportal</h1>
+            <p class="text-xs text-gray-500">Prototype • geen echte data</p>
+          </div>
+        </div>
+        <nav class="ml-6 flex-1">
+          <ul class="flex items-center gap-6 text-sm font-medium" id="mainTabs">
+            <li><button data-tab="vloot" class="tab-active py-2">Vloot</button></li>
+            <li><button data-tab="activiteit" class="py-2">Activiteit</button></li>
+            <li><button data-tab="users" class="py-2">Gebruikersbeheer</button></li>
+          </ul>
+        </nav>
+        <div class="flex items-center gap-2">
+          <button id="btnNewTicket" class="hidden sm:inline-flex items-center gap-2 bg-motrac-red text-white px-4 py-2 rounded-lg hover:opacity-95 shadow-soft">
+            <span>Servicemelding maken</span>
+          </button>
+          <div class="relative">
+            <button id="userBtn" class="flex items-center gap-3 px-3 py-2 bg-gray-100 rounded-lg">
+              <span class="h-2 w-2 bg-green-500 rounded-full"></span>
+              <span id="currentUserName" class="text-sm">Test User 2</span>
+              <span>⋯</span>
+            </button>
+            <div id="userMenu" class="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-soft hidden">
+              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="logoutBtn">Logout</button>
+              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="cancelUserMenu">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <!-- VLOOT -->
+      <section id="tab-vloot" class="space-y-4">
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-soft p-4 flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div class="flex-1">
+            <label class="block text-sm text-gray-600">Locatie</label>
+            <select id="locationFilter" class="mt-1 w-full sm:w-80 border rounded-lg px-3 py-2">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div class="flex-1">
+            <label class="block text-sm text-gray-600">Zoek object…</label>
+            <div class="mt-1 flex">
+              <input id="searchInput" type="text" placeholder="Serienummer of model" class="flex-1 border rounded-l-lg px-3 py-2" />
+              <button id="searchBtn" class="px-4 py-2 bg-gray-900 text-white rounded-r-lg hover:opacity-95">🔍</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl shadow-soft p-2 overflow-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-600 border-b">
+                <th class="py-3 px-3">Serienummer / Referentie</th>
+                <th class="py-3 px-3">Model</th>
+                <th class="py-3 px-3">BMWT‑status</th>
+                <th class="py-3 px-3">BMWT‑vervaldatum</th>
+                <th class="py-3 px-3">Tellerstand (datum)</th>
+                <th class="py-3 px-3">Activiteit</th>
+                <th class="py-3 px-3 text-right">Acties</th>
+              </tr>
+            </thead>
+            <tbody id="fleetTbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ACTIVITEIT -->
+      <section id="tab-activiteit" class="hidden space-y-4">
+        <div class="bg-white rounded-xl shadow-soft p-4 flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div class="flex-1">
+            <label class="block text-sm text-gray-600">Locatie</label>
+            <select id="activityLocationFilter" class="mt-1 w-full sm:w-80 border rounded-lg px-3 py-2"></select>
+          </div>
+          <div class="flex-1">
+            <label class="block text-sm text-gray-600">Zoek melding…</label>
+            <div class="mt-1 flex">
+              <input id="activitySearchInput" type="text" placeholder="Serienummer, nummer of omschrijving" class="flex-1 border rounded-l-lg px-3 py-2" />
+              <button id="activitySearchBtn" class="px-4 py-2 bg-gray-900 text-white rounded-r-lg hover:opacity-95">🔍</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="activityList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <div id="activityEmpty" class="hidden bg-white rounded-xl shadow-soft p-8 text-center text-gray-500">Geen actieve meldingen.</div>
+      </section>
+
+      <!-- USERS -->
+      <section id="tab-users" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Portalgebruikers</h2>
+          <div class="flex items-center gap-2">
+            <label class="text-sm">Records per page</label>
+            <select id="usersPageSize" class="border rounded-lg px-2 py-1">
+              <option>5</option>
+              <option selected>10</option>
+              <option>25</option>
+            </select>
+            <button id="btnAddUser" class="ml-2 bg-motrac-red text-white px-4 py-2 rounded-lg hover:opacity-95">Gebruiker toevoegen</button>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-soft p-2 overflow-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-600 border-b">
+                <th class="py-3 px-3">Gebruiker</th>
+                <th class="py-3 px-3">Locatie</th>
+                <th class="py-3 px-3">Email</th>
+                <th class="py-3 px-3">Portaalrechten</th>
+                <th class="py-3 px-3 text-right">Acties</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+        <div class="flex justify-end items-center gap-2 text-sm">
+          <button id="usersPrev" class="px-3 py-1 border rounded-lg">Vorige</button>
+          <span id="usersPageInfo" class="text-gray-500"></span>
+          <button id="usersNext" class="px-3 py-1 border rounded-lg">Volgende</button>
+        </div>
+      </section>
+
+      <!-- DETAIL: TRUCK -->
+      <section id="truckDetail" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <button id="backToFleet" class="px-3 py-2 border rounded-lg">← Terug naar overzicht</button>
+            <h2 id="detailTitle" class="text-lg font-semibold"></h2>
+          </div>
+          <div class="hidden sm:flex items-center gap-2">
+            <button class="px-3 py-2 border rounded-lg" data-action="newTicketFromDetail">Melding aanmaken</button>
+            <button class="px-3 py-2 border rounded-lg" data-action="updateOdo">Tellerstand doorgeven</button>
+            <button class="px-3 py-2 border rounded-lg" data-action="editRef">Uw referentie wijzigen</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-soft p-0">
+          <div class="border-b flex text-sm font-medium">
+            <button class="px-4 py-3 tab-active" data-subtab="info">Truck informatie</button>
+            <button class="px-4 py-3" data-subtab="act">Truck activiteit</button>
+            <button class="px-4 py-3" data-subtab="ctr">Contract</button>
+          </div>
+          <div id="detailContent" class="p-4"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <!-- Servicemelding algemeen -->
+  <div id="modalTicket" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-xl shadow-soft p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Servicemelding maken</h3>
+        <button data-close class="text-gray-500">✕</button>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm text-gray-600">Truck</label>
+          <select id="ticketTruck" class="mt-1 w-full border rounded-lg px-3 py-2"></select>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600">Opdrachtnummer</label>
+          <input id="ticketOrder" type="text" class="mt-1 w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-600">Type melding</label>
+          <select id="ticketType" class="mt-1 w-full border rounded-lg px-3 py-2">
+            <option>Storing</option>
+            <option>Onderhoud</option>
+            <option>Schade</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-sm text-gray-600">Omschrijving</label>
+          <textarea id="ticketDesc" rows="4" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Beschrijf het probleem en locatie van de truck"></textarea>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-sm text-gray-600">Foto’s</label>
+          <input id="ticketPhotos" type="file" multiple class="mt-1 w-full border rounded-lg px-3 py-2" />
+          <p class="text-xs text-gray-500 mt-1">Voor urgente storingen: neem telefonisch contact op.</p>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end gap-2">
+        <button data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
+        <button id="ticketCreate" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Aanmaken</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tellerstand doorgeven -->
+  <div id="modalOdo" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Tellerstand doorgeven</h3>
+        <button data-close class="text-gray-500">✕</button>
+      </div>
+      <div class="space-y-2">
+        <div class="text-sm text-gray-600">Huidige tellerstand: <span id="odoCurrent" class="font-medium text-gray-800">—</span></div>
+        <label class="text-sm text-gray-600">Nieuwe tellerstand</label>
+        <input id="odoNew" type="number" class="w-full border rounded-lg px-3 py-2" />
+      </div>
+      <div class="mt-6 flex justify-end gap-2">
+        <button data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
+        <button id="odoSave" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Referentie wijzigen -->
+  <div id="modalRef" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Uw referentie wijzigen</h3>
+        <button data-close class="text-gray-500">✕</button>
+      </div>
+      <div class="space-y-2">
+        <div class="text-sm text-gray-600">Huidige referentie: <span id="refCurrent" class="font-medium text-gray-800">—</span></div>
+        <label class="text-sm text-gray-600">Nieuwe referentie</label>
+        <input id="refNew" type="text" class="w-full border rounded-lg px-3 py-2" />
+      </div>
+      <div class="mt-6 flex justify-end gap-2">
+        <button data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
+        <button id="refSave" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verwijderen uit lijst (inactief) -->
+  <div id="modalInactive" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Verwijderen uit lijst</h3>
+        <button data-close class="text-gray-500">✕</button>
+      </div>
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-gray-600">Inactief vanaf</label>
+          <input id="inactiveDate" type="date" class="mt-1 w-full border rounded-lg px-3 py-2"/>
+        </div>
+        <div>
+          <label class="block text-gray-600">Reden voor inactief maken</label>
+          <textarea id="inactiveReason" rows="3" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Reden (verplicht)"></textarea>
+        </div>
+        <p class="text-xs text-gray-500">Na inactief maken is de truck niet meer zichtbaar in het vlootoverzicht.</p>
+      </div>
+      <div class="mt-6 flex justify-end gap-2">
+        <button data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
+        <button id="inactiveConfirm" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Bevestigen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contract inzien -->
+  <div id="modalContract" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
+    <div class="bg-white w-full max-w-xl rounded-xl shadow-soft p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Contract</h3>
+        <button data-close class="text-gray-500">✕</button>
+      </div>
+      <div id="contractBody" class="text-sm grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      <div class="mt-6 text-right">
+        <button data-close class="px-4 py-2 border rounded-lg">Sluiten</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gebruiker toevoegen/bewerken -->
+  <div id="modalUser" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="userModalTitle" class="text-lg font-semibold">Gebruiker toevoegen</h3>
+        <button data-close class="text-gray-500">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm text-gray-600">Naam</label>
+          <input id="userName" type="text" class="mt-1 w-full border rounded-lg px-3 py-2"/>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Email</label>
+          <input id="userEmail" type="email" class="mt-1 w-full border rounded-lg px-3 py-2"/>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Telefoon</label>
+          <input id="userPhone" type="tel" class="mt-1 w-full border rounded-lg px-3 py-2"/>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Locatie</label>
+          <select id="userLocation" class="mt-1 w-full border rounded-lg px-3 py-2"></select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600">Portaalrechten</label>
+          <select id="userRole" class="mt-1 w-full border rounded-lg px-3 py-2">
+            <option>Gebruiker</option>
+            <option>Beheerder</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-6 text-right">
+        <button data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
+        <button id="userSave" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 hidden bg-gray-900 text-white px-4 py-2 rounded-lg shadow-soft"></div>
+
+  <!-- DATA + LOGIC -->
+  <script>
+    // --- Mock data ---------------------------------------------------------
+    const LOCATIONS = [
+      'Alle locaties',
+      'Demovloot Motrac – Almere',
+      'Demovloot Motrac – Venlo',
+      'Demovloot Motrac – Zwijndrecht'
+    ];
+
+    const FLEET = [
+      {
+        id: 'E16-123456', ref: 'Reachtruck – Magazijn A', model: 'Linde E16',
+        bmwStatus: 'Goedgekeurd', bmwExpiry: '2026-03-15',
+        odo: 1523, odoDate: '2025-09-28',
+        location: 'Demovloot Motrac – Almere',
+        activity: [
+          { id: 'M-1001', type: 'Onderhoud', desc: 'Periodieke servicebeurt', status: 'Afgerond', date: '2025-06-20' },
+          { id: 'M-1010', type: 'Storing', desc: 'Mast-sensor foutcode', status: 'Open', date: '2025-10-01' }
+        ],
+        contract: {
+          nummer: 'CTR-2023-ALM-001', start: '2023-01-01', eind: '2026-12-31', uren: 800, type: 'Full Service', model: 'Linde E16'
+        },
+        active: true
+      },
+      {
+        id: 'H25-654321', ref: 'Buiten terrein', model: 'Linde H25',
+        bmwStatus: 'Goedgekeurd', bmwExpiry: '2025-12-01',
+        odo: 3420, odoDate: '2025-09-10',
+        location: 'Demovloot Motrac – Zwijndrecht',
+        activity: [],
+        contract: {
+          nummer: 'CTR-2022-ZWD-019', start: '2022-05-15', eind: '2025-11-30', uren: 1200, type: 'PM + Correctief', model: 'Linde H25'
+        },
+        active: true
+      },
+      {
+        id: 'E20-777777', ref: 'Productiehal 3', model: 'Linde E20',
+        bmwStatus: 'Afkeur', bmwExpiry: '2025-09-01',
+        odo: 801, odoDate: '2025-09-30',
+        location: 'Demovloot Motrac – Venlo',
+        activity: [
+          { id: 'M-1020', type: 'Schade', desc: 'Vork beschadigd', status: 'Open', date: '2025-10-03' }
+        ],
+        contract: {
+          nummer: 'CTR-2024-VNL-003', start: '2024-02-01', eind: '2027-01-31', uren: 900, type: 'Full Service', model: 'Linde E20'
+        },
+        active: true
+      }
+    ];
+
+    const USERS = [
+      { id: 'U1', name: 'Test User 2', email: 'test2@example.com', phone: '+31 6 12345678', location: 'Demovloot Motrac – Almere', role: 'Beheerder' },
+      { id: 'U2', name: 'Jan Jansen', email: 'jan.jansen@example.com', phone: '+31 6 98765432', location: 'Demovloot Motrac – Venlo', role: 'Gebruiker' },
+      { id: 'U3', name: 'Eva Visser', email: 'eva.visser@example.com', phone: '+31 6 45678901', location: 'Demovloot Motrac – Zwijndrecht', role: 'Gebruiker' },
+      { id: 'U4', name: 'Kees Bakker', email: 'k.bakker@example.com', phone: '+31 6 33445566', location: 'Demovloot Motrac – Almere', role: 'Gebruiker' },
+      { id: 'U5', name: 'Sanne de Boer', email: 's.boer@example.com', phone: '+31 6 11112222', location: 'Demovloot Motrac – Almere', role: 'Beheerder' },
+      { id: 'U6', name: 'Ruben Smit', email: 'r.smit@example.com', phone: '+31 6 22223333', location: 'Demovloot Motrac – Venlo', role: 'Gebruiker' },
+      { id: 'U7', name: 'Hanna Mulder', email: 'h.mulder@example.com', phone: '+31 6 33334444', location: 'Demovloot Motrac – Zwijndrecht', role: 'Gebruiker' },
+      { id: 'U8', name: 'Peter Groen', email: 'p.groen@example.com', phone: '+31 6 44445555', location: 'Demovloot Motrac – Venlo', role: 'Gebruiker' },
+      { id: 'U9', name: 'Laura Kok', email: 'l.kok@example.com', phone: '+31 6 55556666', location: 'Demovloot Motrac – Almere', role: 'Gebruiker' },
+      { id: 'U10', name: 'William de Vries', email: 'w.vries@example.com', phone: '+31 6 66667777', location: 'Demovloot Motrac – Zwijndrecht', role: 'Gebruiker' },
+      { id: 'U11', name: 'Noa Willems', email: 'n.willems@example.com', phone: '+31 6 77778888', location: 'Demovloot Motrac – Almere', role: 'Gebruiker' }
+    ];
+
+    // --- State -------------------------------------------------------------
+    let fleetFilter = { location: 'Alle locaties', query: '' };
+    let selectedTruckId = null; // for detail
+    let usersPage = 1;
+    let usersPageSize = 10;
+    let editUserId = null;
+
+    // --- Helpers -----------------------------------------------------------
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const fmtDate = iso => new Date(iso).toLocaleDateString('nl-NL');
+
+    function showToast(msg){
+      const t = $('#toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(()=> t.classList.add('hidden'), 2200);
+    }
+
+    function openModal(id){ $(id).classList.add('show'); }
+    function closeModals(){ $$('.modal').forEach(m=> m.classList.remove('show')); }
+
+    // --- Rendering: Fleet --------------------------------------------------
+    function populateLocationFilters(){
+      const locHtml = LOCATIONS.map(l => `<option ${l===fleetFilter.location?'selected':''}>${l}</option>`).join('');
+      $('#locationFilter').innerHTML = locHtml;
+      $('#activityLocationFilter').innerHTML = LOCATIONS.map(l => `<option>${l}</option>`).join('');
+      $('#userLocation').innerHTML = LOCATIONS.filter(l=>l!=='Alle locaties').map(l => `<option>${l}</option>`).join('');
+      $('#ticketTruck').innerHTML = FLEET.filter(f=>f.active).map(f => `<option value="${f.id}">${f.id} — ${f.location}</option>`).join('');
+    }
+
+    function filteredFleet(){
+      return FLEET.filter(f => f.active)
+        .filter(f => fleetFilter.location==='Alle locaties' || f.location===fleetFilter.location)
+        .filter(f => {
+          const q = fleetFilter.query.trim().toLowerCase();
+          if(!q) return true;
+          return [f.id, f.ref, f.model].some(v => String(v).toLowerCase().includes(q));
+        });
+    }
+
+    function renderFleet(){
+      const tbody = $('#fleetTbody');
+      const rows = filteredFleet().map(f => {
+        const openCount = f.activity.filter(a=>a.status==='Open').length;
+        return `
+          <tr class="border-b hover:bg-gray-50">
+            <td class="py-3 px-3">
+              <button class="text-left text-gray-900 hover:underline" data-open-detail="${f.id}">
+                <div class="font-medium">${f.id}</div>
+                <div class="text-xs text-gray-500">${f.ref}</div>
+              </button>
+            </td>
+            <td class="py-3 px-3">${f.model}</td>
+            <td class="py-3 px-3">${f.bmwStatus}</td>
+            <td class="py-3 px-3">${fmtDate(f.bmwExpiry)}</td>
+            <td class="py-3 px-3">${f.odo.toLocaleString('nl-NL')} <span class="text-xs text-gray-500">(${fmtDate(f.odoDate)})</span></td>
+            <td class="py-3 px-3">
+              <button class="inline-flex items-center justify-center w-7 h-7 bg-red-100 text-motrac-red rounded-full font-semibold" title="Open meldingen" data-open-detail="${f.id}">${openCount}</button>
+            </td>
+            <td class="py-3 px-3 text-right">
+              <div class="relative inline-block kebab">
+                <button class="px-2 py-1 border rounded-lg">⋮</button>
+                <div class="kebab-menu hidden absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft z-10">
+                  <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="newTicket" data-id="${f.id}">Melding aanmaken</button>
+                  <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="updateOdo" data-id="${f.id}">Tellerstand doorgeven</button>
+                  <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="editRef" data-id="${f.id}">Uw referentie wijzigen</button>
+                  <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="showContract" data-id="${f.id}">Contract inzien</button>
+                  <button class="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600" data-action="inactive" data-id="${f.id}">Verwijderen uit lijst</button>
+                </div>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+      tbody.innerHTML = rows || `<tr><td colspan="7" class="py-6 text-center text-gray-500">Geen resultaten</td></tr>`;
+    }
+
+    // --- Rendering: Activity ----------------------------------------------
+    function renderActivity(){
+      const container = $('#activityList');
+      const q = $('#activitySearchInput').value.trim().toLowerCase();
+      const loc = $('#activityLocationFilter').value;
+      const items = [];
+      FLEET.forEach(f => {
+        if(!f.active) return;
+        if(loc !== 'Alle locaties' && f.location !== loc) return;
+        f.activity.forEach(a => {
+          const text = `${a.id} ${a.type} ${a.desc} ${f.id}`.toLowerCase();
+          if(q && !text.includes(q)) return;
+          items.push({ f, a });
+        })
+      });
+      container.innerHTML = items.map(({f,a}) => `
+        <article class="bg-white rounded-xl shadow-soft p-4 flex flex-col gap-2">
+          <div class="text-xs text-gray-500">${fmtDate(a.date)} • ${a.type}</div>
+          <h4 class="font-semibold">${a.id} – ${f.id}</h4>
+          <p class="text-sm text-gray-700 truncate-2">${a.desc}</p>
+          <div class="mt-2 flex items-center justify-between">
+            <span class="text-xs px-2 py-1 rounded-full ${a.status==='Open'?'bg-red-100 text-motrac-red':'bg-green-100 text-green-700'}">${a.status}</span>
+            <button class="text-sm underline" data-open-detail="${f.id}">Naar truck</button>
+          </div>
+        </article>`).join('');
+      $('#activityEmpty').classList.toggle('hidden', items.length!==0);
+    }
+
+    // --- Rendering: Users --------------------------------------------------
+    function renderUsers(){
+      usersPageSize = parseInt($('#usersPageSize').value, 10) || 10;
+      const start = (usersPage-1)*usersPageSize;
+      const pageItems = USERS.slice(start, start+usersPageSize);
+      $('#usersTbody').innerHTML = pageItems.map(u => `
+        <tr class="border-b hover:bg-gray-50">
+          <td class="py-3 px-3">
+            <div class="font-medium">${u.name}</div>
+            <div class="text-xs text-gray-500">${u.phone}</div>
+          </td>
+          <td class="py-3 px-3">${u.location}</td>
+          <td class="py-3 px-3">${u.email}</td>
+          <td class="py-3 px-3">${u.role}</td>
+          <td class="py-3 px-3 text-right">
+            <div class="relative inline-block kebab">
+              <button class="px-2 py-1 border rounded-lg">⋮</button>
+              <div class="kebab-menu hidden absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-soft z-10">
+                <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-user-action="edit" data-id="${u.id}">Edit</button>
+                <button class="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600" data-user-action="delete" data-id="${u.id}">Delete</button>
+              </div>
+            </div>
+          </td>
+        </tr>`).join('');
+      const totalPages = Math.max(1, Math.ceil(USERS.length/usersPageSize));
+      $('#usersPageInfo').textContent = `Pagina ${usersPage} van ${totalPages}`;
+      $('#usersPrev').disabled = usersPage<=1;
+      $('#usersNext').disabled = usersPage>=totalPages;
+    }
+
+    // --- Detail ------------------------------------------------------------
+    function openDetail(id){
+      selectedTruckId = id;
+      const t = FLEET.find(x=>x.id===id);
+      if(!t) return;
+      $('#detailTitle').textContent = `${t.id} • ${t.ref}`;
+      // default to info
+      setDetailTab('info');
+      // show section
+      $('#tab-vloot').classList.add('hidden');
+      $('#tab-activiteit').classList.add('hidden');
+      $('#tab-users').classList.add('hidden');
+      $('#truckDetail').classList.remove('hidden');
+    }
+
+    function setDetailTab(tab){
+      const buttons = $$('#truckDetail [data-subtab]');
+      buttons.forEach(b=> b.classList.toggle('tab-active', b.dataset.subtab===tab));
+      const t = FLEET.find(x=>x.id===selectedTruckId);
+      if(!t) return;
+      if(tab==='info'){
+        $('#detailContent').innerHTML = `
+          <div class="grid sm:grid-cols-2 gap-4 text-sm">
+            ${infoRow('Objectnummer', t.id, true)}
+            ${infoRow('Referentie', t.ref, false, 'editRefFromDetail')}
+            ${infoRow('Model', t.model)}
+            ${infoRow('Tellerstand (datum)', `${t.odo.toLocaleString('nl-NL')} (${fmtDate(t.odoDate)})`, false, 'updateOdoFromDetail')}
+            ${infoRow('BMWT‑status', t.bmwStatus)}
+            ${infoRow('BMWT‑vervaldatum', fmtDate(t.bmwExpiry))}
+          </div>`;
+      } else if(tab==='act'){
+        const items = t.activity;
+        $('#detailContent').innerHTML = items.length? items.map(a=> `
+          <div class="border rounded-lg p-3 mb-2">
+            <div class="text-xs text-gray-500">${fmtDate(a.date)} • ${a.type}</div>
+            <div class="font-medium">${a.id}</div>
+            <div class="text-sm">${a.desc}</div>
+            <div class="mt-1 text-xs ${a.status==='Open'?'text-motrac-red':'text-green-700'}">${a.status}</div>
+          </div>`).join('') : `<div class="text-gray-500">Geen actieve meldingen</div>`;
+      } else {
+        const c = t.contract;
+        $('#detailContent').innerHTML = `
+          <div class="grid sm:grid-cols-2 gap-3 text-sm">
+            ${kv('Contractnummer', c.nummer)}
+            ${kv('Contract type', c.type)}
+            ${kv('Model', c.model)}
+            ${kv('Start datum', fmtDate(c.start))}
+            ${kv('Eind datum', fmtDate(c.eind))}
+            ${kv('Uren per jaar', c.uren)}
+          </div>`;
+      }
+    }
+
+    function infoRow(label, value, readonly=false, actionKey=null){
+      return `
+        <div class="bg-gray-50 rounded-lg p-3">
+          <div class="text-xs text-gray-500 mb-1">${label}</div>
+          <div class="flex items-center justify-between">
+            <div class="font-medium">${value}</div>
+            ${readonly? '' : `<button class="text-sm underline" data-action="${actionKey||''}">Bewerken</button>`}
+          </div>
+        </div>`
+    }
+    function kv(k,v){ return `<div><div class="text-xs text-gray-500">${k}</div><div class="font-medium">${v}</div></div>` }
+
+    // --- Tab switching -----------------------------------------------------
+    function setMainTab(tab){
+      $$('#mainTabs button').forEach(b => b.classList.toggle('tab-active', b.dataset.tab===tab));
+      $('#tab-vloot').classList.toggle('hidden', tab!=='vloot');
+      $('#tab-activiteit').classList.toggle('hidden', tab!=='activiteit');
+      $('#tab-users').classList.toggle('hidden', tab!=='users');
+      $('#truckDetail').classList.add('hidden');
+    }
+
+    // --- Event wiring ------------------------------------------------------
+    function wireEvents(){
+      // User menu
+      $('#userBtn').addEventListener('click', ()=> $('#userMenu').classList.toggle('hidden'));
+      $('#cancelUserMenu').addEventListener('click', ()=> $('#userMenu').classList.add('hidden'));
+      document.addEventListener('click', (e)=>{
+        if(!e.target.closest('#userBtn') && !e.target.closest('#userMenu')){
+          $('#userMenu').classList.add('hidden');
+        }
+      });
+      $('#logoutBtn').addEventListener('click', ()=> showToast('Uitgelogd (prototype)'));
+
+      // Main tabs
+      $$('#mainTabs button').forEach(b => b.addEventListener('click', ()=> setMainTab(b.dataset.tab)));
+
+      // Fleet filters
+      $('#locationFilter').addEventListener('change', (e)=>{ fleetFilter.location = e.target.value; renderFleet(); });
+      $('#searchBtn').addEventListener('click', ()=>{ fleetFilter.query = $('#searchInput').value; renderFleet(); });
+
+      // Open detail via button attributes
+      document.addEventListener('click', (e)=>{
+        const btn = e.target.closest('[data-open-detail]');
+        if(btn){ openDetail(btn.dataset.openDetail); }
+      });
+
+      // Kebab menu actions (fleet)
+      document.addEventListener('click', (e)=>{
+        const act = e.target.closest('[data-action]');
+        if(!act) return;
+        const action = act.dataset.action;
+        const id = act.dataset.id || selectedTruckId;
+        const truck = FLEET.find(x=>x.id===id);
+        if(!truck) return;
+        if(action==='newTicket' || action==='newTicketFromDetail'){
+          $('#ticketTruck').value = truck.id;
+          openModal('#modalTicket');
+        }
+        if(action==='updateOdo' || action==='updateOdoFromDetail'){
+          $('#odoCurrent').textContent = `${truck.odo.toLocaleString('nl-NL')} (${fmtDate(truck.odoDate)})`;
+          $('#odoNew').value = '';
+          $('#odoSave').dataset.id = id;
+          openModal('#modalOdo');
+        }
+        if(action==='editRef' || action==='editRefFromDetail'){
+          $('#refCurrent').textContent = truck.ref;
+          $('#refNew').value = truck.ref;
+          $('#refSave').dataset.id = id;
+          openModal('#modalRef');
+        }
+        if(action==='showContract'){
+          const c = truck.contract;
+          $('#contractBody').innerHTML = `
+            ${kv('Contractnummer', c.nummer)}
+            ${kv('Start datum', fmtDate(c.start))}
+            ${kv('Eind datum', fmtDate(c.eind))}
+            ${kv('Uren per jaar', c.uren)}
+            ${kv('Contract type', c.type)}
+            ${kv('Model', c.model)}
+          `;
+          openModal('#modalContract');
+        }
+        if(action==='inactive'){
+          $('#inactiveDate').valueAsDate = new Date();
+          $('#inactiveConfirm').dataset.id = id;
+          openModal('#modalInactive');
+        }
+      });
+
+      // Modals common close
+      document.querySelectorAll('.modal [data-close]').forEach(b => b.addEventListener('click', closeModals));
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModals(); });
+
+      // Ticket creation
+      $('#btnNewTicket').addEventListener('click', ()=> openModal('#modalTicket'));
+      $('#ticketCreate').addEventListener('click', ()=>{
+        const id = $('#ticketTruck').value;
+        const order = $('#ticketOrder').value.trim();
+        const type = $('#ticketType').value;
+        const desc = $('#ticketDesc').value.trim();
+        if(!id || !desc){ showToast('Vul minimaal truck en omschrijving in.'); return; }
+        const t = FLEET.find(x=>x.id===id);
+        t.activity.push({ id: `M-${Math.floor(1000+Math.random()*9000)}`, type, desc, status: 'Open', date: new Date().toISOString() });
+        closeModals(); renderFleet(); renderActivity(); setMainTab('activiteit');
+        showToast('Servicemelding aangemaakt.');
+        // reset
+        $('#ticketOrder').value=''; $('#ticketDesc').value=''; $('#ticketPhotos').value='';
+      });
+
+      // Odo save
+      $('#odoSave').addEventListener('click', (e)=>{
+        const id = e.target.dataset.id;
+        const t = FLEET.find(x=>x.id===id);
+        const val = parseInt($('#odoNew').value,10);
+        if(isNaN(val) || val < t.odo){ showToast('Nieuwe tellerstand moet ≥ huidige zijn.'); return; }
+        t.odo = val; t.odoDate = new Date().toISOString();
+        closeModals(); renderFleet(); setDetailTab('info');
+        showToast('Tellerstand bijgewerkt.');
+      });
+
+      // Ref save
+      $('#refSave').addEventListener('click', (e)=>{
+        const id = e.target.dataset.id;
+        const t = FLEET.find(x=>x.id===id);
+        const val = $('#refNew').value.trim();
+        if(!val){ showToast('Referentie mag niet leeg zijn.'); return; }
+        t.ref = val;
+        closeModals(); renderFleet(); setDetailTab('info');
+        showToast('Referentie bijgewerkt.');
+      });
+
+      // Inactive confirm
+      $('#inactiveConfirm').addEventListener('click', (e)=>{
+        const id = e.target.dataset.id;
+        const date = $('#inactiveDate').value;
+        const reason = $('#inactiveReason').value.trim();
+        if(!date || !reason){ showToast('Datum en reden zijn verplicht.'); return; }
+        const t = FLEET.find(x=>x.id===id);
+        t.active = false;
+        closeModals(); renderFleet();
+        showToast('Truck gemarkeerd als inactief.');
+      });
+
+      // Activity filters
+      $('#activityLocationFilter').addEventListener('change', renderActivity);
+      $('#activitySearchBtn').addEventListener('click', renderActivity);
+
+      // Users
+      $('#btnAddUser').addEventListener('click', ()=>{ editUserId=null; $('#userModalTitle').textContent='Gebruiker toevoegen'; $('#userName').value=''; $('#userEmail').value=''; $('#userPhone').value=''; $('#userRole').value='Gebruiker'; openModal('#modalUser'); });
+      document.addEventListener('click', (e)=>{
+        const b = e.target.closest('[data-user-action]');
+        if(!b) return;
+        const id = b.dataset.id;
+        if(b.dataset.userAction==='edit'){
+          editUserId=id; const u = USERS.find(x=>x.id===id);
+          $('#userModalTitle').textContent='Gebruiker bewerken';
+          $('#userName').value=u.name; $('#userEmail').value=u.email; $('#userPhone').value=u.phone; $('#userLocation').value=u.location; $('#userRole').value=u.role;
+          openModal('#modalUser');
+        } else if(b.dataset.userAction==='delete'){
+          const idx = USERS.findIndex(x=>x.id===id);
+          if(idx>-1){ USERS.splice(idx,1); renderUsers(); showToast('Gebruiker verwijderd.'); }
+        }
+      });
+      $('#userSave').addEventListener('click', ()=>{
+        const name=$('#userName').value.trim(); const email=$('#userEmail').value.trim(); const phone=$('#userPhone').value.trim(); const location=$('#userLocation').value; const role=$('#userRole').value;
+        if(!name || !email){ showToast('Naam en e‑mail zijn verplicht.'); return; }
+        if(editUserId){
+          const u = USERS.find(x=>x.id===editUserId);
+          Object.assign(u, { name, email, phone, location, role });
+          showToast('Gebruiker bijgewerkt.');
+        } else {
+          USERS.push({ id: 'U'+(Math.floor(Math.random()*10000)), name, email, phone, location, role });
+          showToast('Gebruiker toegevoegd.');
+        }
+        closeModals(); renderUsers();
+      });
+      $('#usersPrev').addEventListener('click', ()=>{ if(usersPage>1){ usersPage--; renderUsers(); }});
+      $('#usersNext').addEventListener('click', ()=>{ usersPage++; renderUsers(); });
+      $('#usersPageSize').addEventListener('change', ()=>{ usersPage=1; renderUsers(); });
+
+      // Back from detail
+      $('#backToFleet').addEventListener('click', ()=>{ setMainTab('vloot'); });
+
+      // Detail subtabs
+      $$('#truckDetail [data-subtab]').forEach(b => b.addEventListener('click', ()=> setDetailTab(b.dataset.subtab)));
+    }
+
+    // --- Init --------------------------------------------------------------
+    function init(){
+      populateLocationFilters();
+      renderFleet();
+      renderActivity();
+      renderUsers();
+      wireEvents();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
