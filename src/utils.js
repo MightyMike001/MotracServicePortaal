@@ -1,7 +1,11 @@
 export const $ = (selector, scope = document) => scope.querySelector(selector);
 export const $$ = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
 
-export const fmtDate = iso => new Date(iso).toLocaleDateString('nl-NL');
+export const fmtDate = iso => {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  return Number.isNaN(date.valueOf()) ? '—' : date.toLocaleDateString('nl-NL');
+};
 
 export function showToast(message) {
   const toast = $('#toast');

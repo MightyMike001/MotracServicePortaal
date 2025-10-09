@@ -3,12 +3,16 @@ import { state } from '../state.js';
 import { $, fmtDate } from '../utils.js';
 
 export function populateLocationFilters() {
+  if (!LOCATIONS.includes(state.fleetFilter.location)) {
+    state.fleetFilter.location = LOCATIONS[0] || 'Alle locaties';
+  }
   const locOptions = LOCATIONS.map(location => {
     const selected = location === state.fleetFilter.location ? 'selected' : '';
     return `<option ${selected}>${location}</option>`;
   }).join('');
   $('#locationFilter').innerHTML = locOptions;
   $('#activityLocationFilter').innerHTML = LOCATIONS.map(location => `<option>${location}</option>`).join('');
+  $('#activityLocationFilter').value = 'Alle locaties';
   $('#userLocation').innerHTML = LOCATIONS.filter(location => location !== 'Alle locaties')
     .map(location => `<option>${location}</option>`)
     .join('');
