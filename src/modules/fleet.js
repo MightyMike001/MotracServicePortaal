@@ -1,6 +1,6 @@
 import { LOCATIONS, FLEET } from '../data.js';
 import { state } from '../state.js';
-import { $, fmtDate } from '../utils.js';
+import { $, fmtDate, formatOdoHtml } from '../utils.js';
 
 export function populateLocationFilters() {
   if (!LOCATIONS.includes(state.fleetFilter.location)) {
@@ -45,7 +45,7 @@ export function renderFleet() {
         <td class="py-3 px-3">${truck.model}</td>
         <td class="py-3 px-3">${truck.bmwStatus}</td>
         <td class="py-3 px-3">${fmtDate(truck.bmwExpiry)}</td>
-        <td class="py-3 px-3">${truck.odo.toLocaleString('nl-NL')} <span class="text-xs text-gray-500">(${fmtDate(truck.odoDate)})</span></td>
+        <td class="py-3 px-3">${formatOdoHtml(truck.odo, truck.odoDate)}</td>
         <td class="py-3 px-3">
           <button class="inline-flex items-center justify-center w-7 h-7 bg-red-100 text-motrac-red rounded-full font-semibold" title="Open meldingen" data-open-detail="${truck.id}">${openCount}</button>
         </td>

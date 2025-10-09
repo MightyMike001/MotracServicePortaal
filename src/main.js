@@ -1,6 +1,6 @@
 import { FLEET, USERS, setFleet, setLocations, setUsers } from './data.js';
 import { state } from './state.js';
-import { $, $$, fmtDate, showToast, openModal, closeModals, kv } from './utils.js';
+import { $, $$, fmtDate, showToast, openModal, closeModals, kv, formatOdoLabel } from './utils.js';
 import { populateLocationFilters, renderFleet } from './modules/fleet.js';
 import { renderActivity } from './modules/activity.js';
 import { renderUsers } from './modules/users.js';
@@ -87,7 +87,7 @@ function wireEvents() {
     }
 
     if (action === 'updateOdo' || action === 'updateOdoFromDetail') {
-      $('#odoCurrent').textContent = `${truck.odo.toLocaleString('nl-NL')} (${fmtDate(truck.odoDate)})`;
+      $('#odoCurrent').textContent = formatOdoLabel(truck.odo, truck.odoDate);
       $('#odoNew').value = '';
       $('#odoSave').dataset.id = id;
       openModal('#modalOdo');
@@ -162,7 +162,8 @@ function wireEvents() {
     const id = event.target.dataset.id;
     const truck = FLEET.find(item => item.id === id);
     const value = parseInt($('#odoNew').value, 10);
-    if (Number.isNaN(value) || value < truck.odo) {
+    const currentOdo = typeof truck.odo === 'number' && Number.isFinite(truck.odo) ? truck.odo : null;
+    if (Number.isNaN(value) || value < 0 || (currentOdo !== null && value < currentOdo)) {
       showToast('Nieuwe tellerstand moet ≥ huidige zijn.');
       return;
     }
