@@ -107,14 +107,14 @@ export async function fetchFleet() {
 
 export async function fetchUsers() {
   const { data, error } = await supabase
-    .from('portal_users')
+    .from('motrac_service_portaal_user_directory')
     .select(`
       id,
       display_name,
       email,
       phone,
       role,
-      location:location_id ( name )
+      default_location_name
     `)
     .order('display_name');
 
@@ -125,7 +125,7 @@ export async function fetchUsers() {
     name: user.display_name ?? '—',
     email: user.email ?? '',
     phone: user.phone ?? '',
-    location: user.location?.name ?? '—',
+    location: user.default_location_name ?? '—',
     role: user.role ?? 'Gebruiker'
   }));
 }
