@@ -5,49 +5,11 @@
 -- Zorg dat de vereiste extensies beschikbaar zijn (Supabase heeft pgcrypto standaard beschikbaar).
 create extension if not exists "pgcrypto";
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_type t
-    join pg_namespace n on n.oid = t.typnamespace
-    where t.typname = 'bmw_status' and n.nspname = 'public'
-  ) then
-    create type public.bmw_status as enum ('Goedgekeurd', 'Afkeur', 'In_beoordeling');
-  end if;
-end $$;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_type t
-    join pg_namespace n on n.oid = t.typnamespace
-    where t.typname = 'activity_status' and n.nspname = 'public'
-  ) then
-    create type public.activity_status as enum ('Open', 'Afgerond');
-  end if;
-end $$;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_type t
-    join pg_namespace n on n.oid = t.typnamespace
-    where t.typname = 'activity_type' and n.nspname = 'public'
-  ) then
-    create type public.activity_type as enum ('Onderhoud', 'Storing', 'Schade', 'Inspectie');
-  end if;
-end $$;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_type t
-    join pg_namespace n on n.oid = t.typnamespace
-    where t.typname = 'motrac_service_portaal_role' and n.nspname = 'public'
-  ) then
-    create type public.motrac_service_portaal_role as enum ('Beheerder', 'Gebruiker', 'Gast');
-  end if;
-end $$;
+-- Enumeraties voor consistente status- en rolegegevens.
+create type public.bmw_status as enum ('Goedgekeurd', 'Afkeur', 'In_beoordeling');
+create type public.activity_status as enum ('Open', 'Afgerond');
+create type public.activity_type as enum ('Onderhoud', 'Storing', 'Schade', 'Inspectie');
+create type public.motrac_service_portaal_role as enum ('Beheerder', 'Gebruiker', 'Gast');
 
 -- Locaties waar assets en gebruikers aan gekoppeld zijn.
 create table public.locations (
