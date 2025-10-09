@@ -24,6 +24,26 @@
   color-scheme: light;
 }
 
+/* --- Application specific helpers ------------------------------------- */
+
+.tab-active {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.75rem;
+}
+
+.modal {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal.show {
+  display: flex;
+}
+
 :root[data-theme="dark"] {
   --color-highlight-bg: #1f2733;
   --color-highlight-border: #303b4b;
@@ -2509,3 +2529,4 @@ nav.pager select {
     bottom: 1rem;
   }
 }
+:root {
