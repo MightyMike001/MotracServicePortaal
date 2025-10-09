@@ -23,14 +23,14 @@ end;
 $$;
 
 -- Locaties waar assets en gebruikers aan gekoppeld zijn.
-create table public.locations (
+create table if not exists public.locations (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   created_at timestamptz not null default timezone('utc', now())
 );
 
 -- Overzicht van alle heftrucks / voertuigen.
-create table public.fleet_assets (
+create table if not exists public.fleet_assets (
   id text primary key,
   reference text,
   model text not null,
@@ -55,13 +55,15 @@ end;
 $$ language plpgsql;
 
 -- Houd de updated_at kolom automatisch bij.
+drop trigger if exists update_fleet_assets_timestamp on public.fleet_assets;
+
 create trigger update_fleet_assets_timestamp
 before update on public.fleet_assets
 for each row
 execute function public.set_updated_at();
 
 -- Contractinformatie behorend bij een asset (1-op-1).
-create table public.fleet_contracts (
+create table if not exists public.fleet_contracts (
   id uuid primary key default gen_random_uuid(),
   fleet_id text not null references public.fleet_assets(id) on delete cascade,
   contract_number text not null,
@@ -75,7 +77,7 @@ create table public.fleet_contracts (
 );
 
 -- Historiek van meldingen / activiteiten per asset.
-create table public.fleet_activity (
+create table if not exists public.fleet_activity (
   id uuid primary key default gen_random_uuid(),
   fleet_id text not null references public.fleet_assets(id) on delete cascade,
   activity_code text not null,
@@ -88,7 +90,7 @@ create table public.fleet_activity (
 );
 
 -- Gebruikersprofielen voor het Motrac Service Portaal.
-create table public.motrac_service_portaal_profiles (
+create table if not exists public.motrac_service_portaal_profiles (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid unique references auth.users(id) on delete set null,
   display_name text not null,
@@ -101,13 +103,15 @@ create table public.motrac_service_portaal_profiles (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+drop trigger if exists update_motrac_profiles_timestamp on public.motrac_service_portaal_profiles;
+
 create trigger update_motrac_profiles_timestamp
 before update on public.motrac_service_portaal_profiles
 for each row
 execute function public.set_updated_at();
 
 -- Koppelt gebruikers aan meerdere locaties binnen het portaal.
-create table public.motrac_service_portaal_location_memberships (
+create table if not exists public.motrac_service_portaal_location_memberships (
   profile_id uuid references public.motrac_service_portaal_profiles(id) on delete cascade,
   location_id uuid references public.locations(id) on delete cascade,
   is_primary boolean not null default false,
@@ -117,9 +121,11 @@ create table public.motrac_service_portaal_location_memberships (
 );
 
 -- Garandeert één primaire locatie per gebruiker.
-create unique index motrac_service_portaal_location_memberships_primary_unique
+create unique index if not exists motrac_service_portaal_location_memberships_primary_unique
   on public.motrac_service_portaal_location_memberships (profile_id)
   where is_primary;
+
+drop trigger if exists update_motrac_memberships_timestamp on public.motrac_service_portaal_location_memberships;
 
 create trigger update_motrac_memberships_timestamp
 before update on public.motrac_service_portaal_location_memberships
@@ -127,7 +133,7 @@ for each row
 execute function public.set_updated_at();
 
 -- View voor het gebruikersoverzicht in de frontend.
-create view public.motrac_service_portaal_user_directory as
+create or replace view public.motrac_service_portaal_user_directory as
 select
   profile.id,
   profile.display_name,
@@ -140,7 +146,7 @@ from public.motrac_service_portaal_profiles profile
 left join public.locations loc on loc.id = profile.default_location_id;
 
 -- Handige view voor frontend filters om "Alle locaties" optie op te halen.
-create view public.locations_with_all as
+create or replace view public.locations_with_all as
 select '00000000-0000-0000-0000-000000000000'::uuid as id,
        'Alle locaties'::text as name
 union all
