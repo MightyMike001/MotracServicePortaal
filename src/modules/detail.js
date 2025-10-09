@@ -1,6 +1,6 @@
 import { FLEET } from '../data.js';
 import { state } from '../state.js';
-import { $, $$, fmtDate, kv } from '../utils.js';
+import { $, $$, fmtDate, kv, formatOdoHtml } from '../utils.js';
 
 export function openDetail(id) {
   state.selectedTruckId = id;
@@ -30,7 +30,7 @@ export function setDetailTab(tab) {
         ${infoRow('Objectnummer', truck.id, true)}
         ${infoRow('Referentie', truck.ref, false, 'editRefFromDetail')}
         ${infoRow('Model', truck.model)}
-        ${infoRow('Tellerstand (datum)', `${truck.odo.toLocaleString('nl-NL')} (${fmtDate(truck.odoDate)})`, false, 'updateOdoFromDetail')}
+        ${infoRow('Tellerstand (datum)', formatOdoHtml(truck.odo, truck.odoDate), false, 'updateOdoFromDetail')}
         ${infoRow('BMWT‑status', truck.bmwStatus)}
         ${infoRow('BMWT‑vervaldatum', fmtDate(truck.bmwExpiry))}
       </div>`;

@@ -39,11 +39,16 @@ function mapContract(rawContract) {
     };
   }
 
+  const hoursRaw = contract.hours_per_year;
+  const hoursNumber =
+    typeof hoursRaw === 'number' ? hoursRaw : Number(hoursRaw);
+  const uren = Number.isFinite(hoursNumber) ? hoursNumber : null;
+
   return {
     nummer: contract.contract_number ?? '—',
     start: contract.start_date ?? null,
     eind: contract.end_date ?? null,
-    uren: contract.hours_per_year ?? null,
+    uren,
     type: contract.contract_type ?? '—',
     model: contract.model ?? '—'
   };
@@ -87,7 +92,11 @@ export async function fetchFleet() {
     model: item.model ?? '—',
     bmwStatus: item.bmw_status ?? 'Onbekend',
     bmwExpiry: item.bmw_expiry ?? null,
-    odo: typeof item.odo === 'number' ? item.odo : Number(item.odo ?? 0),
+    odo: (() => {
+      const raw = item.odo;
+      const value = typeof raw === 'number' ? raw : Number(raw);
+      return Number.isFinite(value) ? value : null;
+    })(),
     odoDate: item.odo_date ?? null,
     location: item.location?.name ?? 'Onbekende locatie',
     activity: mapActivity(item.activity),
