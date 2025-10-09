@@ -1,11 +1,11 @@
-export const LOCATIONS = [
+const DEFAULT_LOCATIONS = [
   'Alle locaties',
   'Demovloot Motrac – Almere',
   'Demovloot Motrac – Venlo',
   'Demovloot Motrac – Zwijndrecht'
 ];
 
-export const FLEET = [
+const DEFAULT_FLEET = [
   {
     id: 'E16-123456',
     ref: 'Reachtruck – Magazijn A',
@@ -73,7 +73,7 @@ export const FLEET = [
   }
 ];
 
-export const USERS = [
+const DEFAULT_USERS = [
   { id: 'U1', name: 'Test User 2', email: 'test2@example.com', phone: '+31 6 12345678', location: 'Demovloot Motrac – Almere', role: 'Beheerder' },
   { id: 'U2', name: 'Jan Jansen', email: 'jan.jansen@example.com', phone: '+31 6 98765432', location: 'Demovloot Motrac – Venlo', role: 'Gebruiker' },
   { id: 'U3', name: 'Eva Visser', email: 'eva.visser@example.com', phone: '+31 6 45678901', location: 'Demovloot Motrac – Zwijndrecht', role: 'Gebruiker' },
@@ -86,3 +86,40 @@ export const USERS = [
   { id: 'U10', name: 'William de Vries', email: 'w.vries@example.com', phone: '+31 6 66667777', location: 'Demovloot Motrac – Zwijndrecht', role: 'Gebruiker' },
   { id: 'U11', name: 'Noa Willems', email: 'n.willems@example.com', phone: '+31 6 77778888', location: 'Demovloot Motrac – Almere', role: 'Gebruiker' }
 ];
+
+export let LOCATIONS = [...DEFAULT_LOCATIONS];
+export let FLEET = DEFAULT_FLEET.map(item => ({
+  ...item,
+  activity: item.activity.map(activity => ({ ...activity }))
+}));
+export let USERS = [...DEFAULT_USERS];
+
+export function setLocations(locations = []) {
+  const cleaned = Array.isArray(locations) ? locations.filter(Boolean) : [];
+  const unique = Array.from(new Set(cleaned));
+  if (!unique.includes('Alle locaties')) {
+    unique.unshift('Alle locaties');
+  }
+  LOCATIONS = unique;
+}
+
+export function setFleet(fleet = []) {
+  if (Array.isArray(fleet)) {
+    FLEET = fleet;
+  }
+}
+
+export function setUsers(users = []) {
+  if (Array.isArray(users)) {
+    USERS = users;
+  }
+}
+
+export function resetToDefaults() {
+  LOCATIONS = [...DEFAULT_LOCATIONS];
+  FLEET = DEFAULT_FLEET.map(item => ({
+    ...item,
+    activity: item.activity.map(activity => ({ ...activity }))
+  }));
+  USERS = [...DEFAULT_USERS];
+}

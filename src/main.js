@@ -1,4 +1,4 @@
-import { FLEET, USERS } from './data.js';
+import { FLEET, USERS, setFleet, setLocations, setUsers } from './data.js';
 import { state } from './state.js';
 import { $, $$, fmtDate, showToast, openModal, closeModals, kv } from './utils.js';
 import { populateLocationFilters, renderFleet } from './modules/fleet.js';
@@ -6,6 +6,7 @@ import { renderActivity } from './modules/activity.js';
 import { renderUsers } from './modules/users.js';
 import { openDetail, setDetailTab } from './modules/detail.js';
 import { setMainTab } from './modules/navigation.js';
+import { fetchFleet, fetchLocations, fetchUsers } from './api/supabase.js';
 
 function wireEvents() {
   function closeKebabMenus(except = null) {
@@ -303,7 +304,43 @@ function wireEvents() {
   $$('#truckDetail [data-subtab]').forEach(button => button.addEventListener('click', () => setDetailTab(button.dataset.subtab)));
 }
 
-function init() {
+async function loadInitialData() {
+  const [locationsResult, fleetResult, usersResult] = await Promise.allSettled([
+    fetchLocations(),
+    fetchFleet(),
+    fetchUsers()
+  ]);
+
+  let hadError = false;
+
+  if (locationsResult.status === 'fulfilled') {
+    setLocations(locationsResult.value);
+  } else {
+    console.error('Kon locaties niet laden vanuit Supabase.', locationsResult.reason);
+    hadError = true;
+  }
+
+  if (fleetResult.status === 'fulfilled') {
+    setFleet(fleetResult.value);
+  } else {
+    console.error('Kon vloot niet laden vanuit Supabase.', fleetResult.reason);
+    hadError = true;
+  }
+
+  if (usersResult.status === 'fulfilled') {
+    setUsers(usersResult.value);
+  } else {
+    console.error('Kon gebruikers niet laden vanuit Supabase.', usersResult.reason);
+    hadError = true;
+  }
+
+  if (hadError) {
+    showToast('Live data niet beschikbaar – voorbeelddata worden gebruikt.');
+  }
+}
+
+async function init() {
+  await loadInitialData();
   populateLocationFilters();
   renderFleet();
   renderActivity();
@@ -311,4 +348,6 @@ function init() {
   wireEvents();
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+});
