@@ -9,7 +9,7 @@ create extension if not exists "pgcrypto";
 create type public.bmw_status as enum ('Goedgekeurd', 'Afkeur', 'In_beoordeling');
 create type public.activity_status as enum ('Open', 'Afgerond');
 create type public.activity_type as enum ('Onderhoud', 'Storing', 'Schade', 'Inspectie');
-create type public.portal_role as enum ('Beheerder', 'Gebruiker');
+create type public.motrac_service_portaal_role as enum ('Beheerder', 'Gebruiker', 'Gast');
 
 -- Locaties waar assets en gebruikers aan gekoppeld zijn.
 create table public.locations (
@@ -44,7 +44,7 @@ end;
 $$ language plpgsql;
 
 -- Houd de updated_at kolom automatisch bij.
-create trigger set_timestamp
+create trigger update_fleet_assets_timestamp
 before update on public.fleet_assets
 for each row
 execute function public.set_updated_at();
@@ -76,17 +76,57 @@ create table public.fleet_activity (
   unique (fleet_id, activity_code)
 );
 
--- Applicatiegebruikers, optioneel gekoppeld aan auth.users.
-create table public.portal_users (
+-- Gebruikersprofielen voor het Motrac Service Portaal.
+create table public.motrac_service_portaal_profiles (
   id uuid primary key default gen_random_uuid(),
-  auth_user_id uuid references auth.users(id) on delete set null,
+  auth_user_id uuid unique references auth.users(id) on delete set null,
   display_name text not null,
   email text not null unique,
   phone text,
-  location_id uuid references public.locations(id) on delete set null,
-  role public.portal_role not null default 'Gebruiker',
-  created_at timestamptz not null default timezone('utc', now())
+  role public.motrac_service_portaal_role not null default 'Gebruiker',
+  default_location_id uuid references public.locations(id) on delete set null,
+  last_sign_in_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
 );
+
+create trigger update_motrac_profiles_timestamp
+before update on public.motrac_service_portaal_profiles
+for each row
+execute function public.set_updated_at();
+
+-- Koppelt gebruikers aan meerdere locaties binnen het portaal.
+create table public.motrac_service_portaal_location_memberships (
+  profile_id uuid references public.motrac_service_portaal_profiles(id) on delete cascade,
+  location_id uuid references public.locations(id) on delete cascade,
+  is_primary boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  primary key (profile_id, location_id)
+);
+
+-- Garandeert één primaire locatie per gebruiker.
+create unique index motrac_service_portaal_location_memberships_primary_unique
+  on public.motrac_service_portaal_location_memberships (profile_id)
+  where is_primary;
+
+create trigger update_motrac_memberships_timestamp
+before update on public.motrac_service_portaal_location_memberships
+for each row
+execute function public.set_updated_at();
+
+-- View voor het gebruikersoverzicht in de frontend.
+create view public.motrac_service_portaal_user_directory as
+select
+  profile.id,
+  profile.display_name,
+  profile.email,
+  profile.phone,
+  profile.role,
+  profile.default_location_id,
+  coalesce(loc.name, 'Onbekende locatie') as default_location_name
+from public.motrac_service_portaal_profiles profile
+left join public.locations loc on loc.id = profile.default_location_id;
 
 -- Handige view voor frontend filters om "Alle locaties" optie op te halen.
 create view public.locations_with_all as
