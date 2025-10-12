@@ -3,9 +3,30 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.0';
 const SUPABASE_URL = 'https://ezcxfobjsvomcjuwbgep.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y3hmb2Jqc3ZvbWNqdXdiZ2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2NzQ3ODcsImV4cCI6MjA3MzI1MDc4N30.IhYZYfB_N2JDOG82NFbB_wxY7BJhahqJd9Y71nhpI3I';
 
+const noCacheFetch = (input, init = {}) => {
+  const headers = new Headers(init.headers || {});
+  headers.set('Cache-Control', 'no-store');
+  headers.set('Pragma', 'no-cache');
+  headers.set('Expires', '0');
+
+  return fetch(input, {
+    ...init,
+    cache: 'no-store',
+    headers
+  });
+};
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: false
+  },
+  global: {
+    headers: {
+      'Cache-Control': 'no-store',
+      Pragma: 'no-cache',
+      Expires: '0'
+    },
+    fetch: noCacheFetch
   }
 });
 
