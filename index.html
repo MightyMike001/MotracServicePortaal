@@ -514,21 +514,15 @@
             <label class="block text-sm text-gray-600">Telefoonnummer</label>
             <input id="requestPhone" type="tel" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Optioneel" />
           </div>
-          <div>
-            <label class="block text-sm text-gray-600">Gewenste omgeving</label>
-            <select id="requestRole" class="mt-1 w-full border rounded-lg px-3 py-2">
-              <option>Gebruiker</option>
-              <option>Vlootbeheerder</option>
-              <option>Klant</option>
-            </select>
-          </div>
-          <div>
+          <div class="sm:col-span-2">
             <label class="block text-sm text-gray-600">Aanvullende informatie</label>
             <input id="requestNotes" type="text" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Bijv. klantnummer" />
           </div>
         </div>
         <p class="text-xs text-gray-500">
-          Na verzenden ontvangt een Motrac beheerder de aanvraag en koppelt het juiste portaal aan uw organisatie.
+          Na verzenden ontvangt een Motrac beheerder de aanvraag en koppelt de juiste rechten aan uw account.
+          U kunt direct inloggen met het gekozen wachtwoord, maar ziet pas inhoud zodra een beheerder uw rol heeft
+          toegewezen.
         </p>
         <div class="flex justify-end gap-2">
           <button type="button" data-close class="px-4 py-2 border rounded-lg">Annuleren</button>

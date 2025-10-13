@@ -16,7 +16,7 @@ export const state = {
       email: 'm.hofman@hofmanlogistics.nl',
       phone: '+31 6 9900 1122',
       organisation: 'Hofman Logistics',
-      requestedRole: 'Klant',
+      requestedRole: null,
       requestNotes: 'Klantnummer HL-5582',
       status: 'pending',
       submittedAt: '2025-10-06T09:30:00+02:00'

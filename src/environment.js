@@ -6,6 +6,12 @@ const ROLE_TO_ENVIRONMENT = {
 };
 
 export const ENVIRONMENTS = {
+  pending: {
+    key: 'pending',
+    label: 'Nog geen rol',
+    summary: 'Uw account is aangemaakt. Een beheerder kent binnenkort de juiste rechten toe.',
+    allowedTabs: []
+  },
   beheerder: {
     key: 'beheerder',
     label: 'Beheerder',
@@ -33,13 +39,13 @@ export const ENVIRONMENTS = {
 };
 
 export function getEnvironmentKeyForRole(role) {
-  if (!role) return 'gebruiker';
+  if (!role) return 'pending';
   return ROLE_TO_ENVIRONMENT[role] || 'gebruiker';
 }
 
 export function resolveEnvironment(input) {
   if (!input) {
-    return ENVIRONMENTS.gebruiker;
+    return ENVIRONMENTS.pending;
   }
 
   if (ENVIRONMENTS[input]) {
@@ -47,7 +53,7 @@ export function resolveEnvironment(input) {
   }
 
   const key = getEnvironmentKeyForRole(input);
-  return ENVIRONMENTS[key] || ENVIRONMENTS.gebruiker;
+  return ENVIRONMENTS[key] || ENVIRONMENTS.pending;
 }
 
 export function isTabAllowed(environment, tab) {
