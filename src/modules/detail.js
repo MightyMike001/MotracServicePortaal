@@ -1,6 +1,6 @@
 import { FLEET } from '../data.js';
 import { state } from '../state.js';
-import { $, $$, fmtDate, kv, formatOdoHtml } from '../utils.js';
+import { $, $$, fmtDate, kv, formatHoursHtml } from '../utils.js';
 import { canViewFleetAsset } from './access.js';
 
 export function openDetail(id) {
@@ -31,8 +31,10 @@ export function setDetailTab(tab) {
         ${infoRow('Objectnummer', truck.id, true)}
         ${infoRow('Referentie', truck.ref, false, 'editRefFromDetail')}
         ${infoRow('Vloot', truck.fleetName || '—', true)}
+        ${infoRow('Locatie', truck.location || '—', true)}
+        ${infoRow('Modeltype', truck.modelType || '—', true)}
         ${infoRow('Model', truck.model)}
-        ${infoRow('Tellerstand (datum)', formatOdoHtml(truck.odo, truck.odoDate), false, 'updateOdoFromDetail')}
+        ${infoRow('Urenstand (datum)', formatHoursHtml(truck.hours, truck.hoursDate), false, 'updateOdoFromDetail')}
         ${infoRow('BMWT‑status', truck.bmwStatus)}
         ${infoRow('BMWT‑vervaldatum', fmtDate(truck.bmwExpiry))}
       </div>`;

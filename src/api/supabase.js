@@ -199,13 +199,20 @@ export async function fetchFleet() {
     fleetName: item.customer_fleet_name ?? '—',
     ref: item.reference ?? '—',
     model: item.model ?? '—',
+    modelType: item.model_type ?? '—',
     bmwStatus: item.bmw_status ?? 'Onbekend',
     bmwExpiry: item.bmw_expiry ?? null,
-    odo: toNumber(item.odo),
-    odoDate: item.odo_date ?? null,
+    hours: toNumber(item.hours ?? item.odo),
+    hoursDate: item.hours_date ?? item.odo_date ?? null,
+    odo: toNumber(item.hours ?? item.odo),
+    odoDate: item.hours_date ?? item.odo_date ?? null,
     location: item.location_name ?? 'Onbekende locatie',
     activity: normaliseActivity(item.activity ?? []),
     contract: normaliseContract(item.contract),
+    openActivityCount: (() => {
+      const value = toNumber(item.open_activity_count);
+      return value == null ? 0 : value;
+    })(),
     active: item.active ?? true
   }));
 }
