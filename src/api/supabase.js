@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.0';
 
-const SUPABASE_URL = 'https://ezcxfobjsvomcjuwbgep.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y3hmb2Jqc3ZvbWNqdXdiZ2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2NzQ3ODcsImV4cCI6MjA3MzI1MDc4N30.IhYZYfB_N2JDOG82NFbB_wxY7BJhahqJd9Y71nhpI3I';
+const SUPABASE_URL = 'https://gizddlytlnnkvlgpvkcs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpemRkbHl0bG5ua3ZsZ3B2a2NzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNzQ4OTEsImV4cCI6MjA3NTg1MDg5MX0.F8cRkJC5pq0O9eG-hL89Y33ga56AXd-moaSlOtpOg3A';
 
 const noCacheFetch = (input, init = {}) => {
   const headers = new Headers(init.headers || {});
@@ -22,6 +22,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
   global: {
     headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       'Cache-Control': 'no-store',
       Pragma: 'no-cache',
       Expires: '0'
