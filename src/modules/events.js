@@ -22,6 +22,28 @@ export function wireEvents() {
     });
   }
 
+  const mainNav = $('#mainNav');
+  const mobileMenuToggle = $('#mobileMenuToggle');
+  const collapseMobileMenu = () => {
+    if (!mainNav || !mobileMenuToggle) return;
+    mainNav.classList.add('hidden');
+    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+  };
+
+  mobileMenuToggle?.addEventListener('click', () => {
+    if (!mainNav) return;
+    const isHidden = mainNav.classList.toggle('hidden');
+    mobileMenuToggle.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+  });
+
+  document.addEventListener('click', event => {
+    if (!mainNav || !mobileMenuToggle) return;
+    if (mainNav.classList.contains('hidden')) return;
+    if (!window.matchMedia('(max-width: 639px)').matches) return;
+    if (event.target.closest('#mainNav') || event.target.closest('#mobileMenuToggle')) return;
+    collapseMobileMenu();
+  });
+
   $('#userBtn').addEventListener('click', () => $('#userMenu').classList.toggle('hidden'));
   $('#cancelUserMenu').addEventListener('click', () => $('#userMenu').classList.add('hidden'));
   document.addEventListener('click', event => {
@@ -40,6 +62,9 @@ export function wireEvents() {
     button.addEventListener('click', () => {
       if (button.disabled) return;
       switchMainTab(button.dataset.tab);
+      if (window.matchMedia('(max-width: 639px)').matches) {
+        collapseMobileMenu();
+      }
     })
   );
 
@@ -163,6 +188,10 @@ export function wireEvents() {
   });
 
   $('#btnNewTicket').addEventListener('click', () => openModal('#modalTicket'));
+  $('#btnNewTicketMobile')?.addEventListener('click', () => {
+    openModal('#modalTicket');
+    collapseMobileMenu();
+  });
   $('#ticketCreate').addEventListener('click', () => {
     const id = $('#ticketTruck').value;
     const type = $('#ticketType').value;

@@ -188,14 +188,14 @@ export function renderUsers() {
 
   $('#usersTbody').innerHTML = pageItems.map(user => `
     <tr class="border-b hover:bg-gray-50">
-      <td class="py-3 px-3">
+      <td class="py-3 px-3" data-label="Gebruiker">
         <div class="font-medium">${user.name}</div>
         <div class="text-xs text-gray-500">${user.phone}</div>
       </td>
-      <td class="py-3 px-3">${user.location}</td>
-      <td class="py-3 px-3">${user.email}</td>
-      <td class="py-3 px-3">${user.role}</td>
-      <td class="py-3 px-3 text-right">
+      <td class="py-3 px-3" data-label="Locatie">${user.location}</td>
+      <td class="py-3 px-3" data-label="Email">${user.email}</td>
+      <td class="py-3 px-3" data-label="Portaalrechten">${user.role}</td>
+      <td class="py-3 px-3 sm:text-right" data-label="Acties">
         <div class="relative inline-block kebab">
           <button class="px-2 py-1 border rounded-lg">⋮</button>
           <div class="kebab-menu hidden absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-soft z-10">
