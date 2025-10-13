@@ -630,8 +630,14 @@ async function handleAuthenticatedSession(session, { forceReload = false } = {})
     state.activeEnvironmentKey = 'beheerder';
     state.activeTab = 'vloot';
     $('#currentUserName').textContent = 'Niet ingelogd';
-    $('#userMenuName')?.textContent = 'Niet ingelogd';
-    $('#userMenuEmail')?.textContent = '';
+    const userMenuName = $('#userMenuName');
+    if (userMenuName) {
+      userMenuName.textContent = 'Niet ingelogd';
+    }
+    const userMenuEmail = $('#userMenuEmail');
+    if (userMenuEmail) {
+      userMenuEmail.textContent = '';
+    }
     showLoginPage();
     return;
   }
@@ -654,8 +660,14 @@ async function handleAuthenticatedSession(session, { forceReload = false } = {})
   const displayName =
     profile?.display_name || session.user.user_metadata?.full_name || session.user.email || 'Ingelogde gebruiker';
   $('#currentUserName').textContent = displayName;
-  $('#userMenuName')?.textContent = displayName;
-  $('#userMenuEmail')?.textContent = profile?.email || session.user.email || '';
+  const userMenuName = $('#userMenuName');
+  if (userMenuName) {
+    userMenuName.textContent = displayName;
+  }
+  const userMenuEmail = $('#userMenuEmail');
+  if (userMenuEmail) {
+    userMenuEmail.textContent = profile?.email || session.user.email || '';
+  }
 
   if (forceReload) {
     try {
