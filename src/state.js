@@ -3,5 +3,9 @@ export const state = {
   selectedTruckId: null,
   usersPage: 1,
   usersPageSize: 10,
-  editUserId: null
+  editUserId: null,
+  session: null,
+  profile: null,
+  hasLoadedInitialData: false,
+  eventsWired: false
 };

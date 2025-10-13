@@ -33,8 +33,54 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="bg-motrac-gray text-gray-900">
+  <!-- Login Page -->
+  <div id="loginPage" class="min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-soft p-8 space-y-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-motrac-red rounded-lg"></div>
+        <div>
+          <h1 class="text-xl font-semibold">Motrac Serviceportal</h1>
+          <p class="text-sm text-gray-500">Log in met uw account</p>
+        </div>
+      </div>
+      <form id="loginForm" class="space-y-5">
+        <div>
+          <label for="loginEmail" class="block text-sm font-medium text-gray-700">E-mailadres</label>
+          <input
+            id="loginEmail"
+            type="email"
+            autocomplete="email"
+            required
+            class="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-motrac-red focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label for="loginPassword" class="block text-sm font-medium text-gray-700">Wachtwoord</label>
+          <input
+            id="loginPassword"
+            type="password"
+            autocomplete="current-password"
+            required
+            class="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-motrac-red focus:border-transparent"
+          />
+        </div>
+        <p id="loginStatus" class="text-sm text-gray-500 hidden"></p>
+        <p id="loginError" class="text-sm text-red-600 hidden"></p>
+        <button
+          id="loginSubmit"
+          type="submit"
+          class="w-full inline-flex items-center justify-center gap-2 bg-motrac-red text-white px-4 py-2 rounded-lg font-medium hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          <span id="loginSubmitDefault">Inloggen</span>
+          <span id="loginSubmitLoading" class="hidden">Bezig…</span>
+        </button>
+      </form>
+      <p class="text-xs text-gray-400 text-center">Toegang uitsluitend voor geautoriseerde Motrac klanten.</p>
+    </div>
+  </div>
+
   <!-- Global App Wrapper -->
-  <div id="app" class="min-h-screen">
+  <div id="app" class="min-h-screen hidden">
     <!-- Top Navigation -->
     <header class="bg-white shadow-soft">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
@@ -59,12 +105,16 @@
           <div class="relative">
             <button id="userBtn" class="flex items-center gap-3 px-3 py-2 bg-gray-100 rounded-lg">
               <span class="h-2 w-2 bg-green-500 rounded-full"></span>
-              <span id="currentUserName" class="text-sm">Test User 2</span>
+              <span id="currentUserName" class="text-sm">Niet ingelogd</span>
               <span>⋯</span>
             </button>
-            <div id="userMenu" class="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-soft hidden">
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="logoutBtn">Logout</button>
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="cancelUserMenu">Cancel</button>
+            <div id="userMenu" class="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft hidden">
+              <div class="px-4 py-3 border-b">
+                <p class="text-sm font-semibold" id="userMenuName">Niet ingelogd</p>
+                <p class="text-xs text-gray-500" id="userMenuEmail"></p>
+              </div>
+              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="logoutBtn">Uitloggen</button>
+              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="cancelUserMenu">Annuleren</button>
             </div>
           </div>
         </div>

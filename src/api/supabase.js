@@ -62,6 +62,27 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   }
 });
 
+export async function getCurrentSession() {
+  const result = await supabase.auth.getSession();
+  if (result.error) throw result.error;
+  return result.data;
+}
+
+export function onAuthStateChange(callback) {
+  return supabase.auth.onAuthStateChange(callback);
+}
+
+export async function signInWithPassword({ email, password }) {
+  const result = await supabase.auth.signInWithPassword({ email, password });
+  if (result.error) throw result.error;
+  return result.data;
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
 function toNumber(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
   const numeric = Number(value);
@@ -165,4 +186,24 @@ export async function fetchUsers() {
     location: user.default_location_name ?? '—',
     role: user.role ?? 'Gebruiker'
   }));
+}
+
+export async function fetchProfileByAuthUserId(authUserId) {
+  if (!authUserId) return null;
+
+  const { data, error } = await supabase
+    .from('motrac_service_portaal_user_directory')
+    .select(
+      'id, auth_user_id, display_name, email, phone, role, default_location_id, default_location_name, last_sign_in_at'
+    )
+    .eq('auth_user_id', authUserId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function touchProfileSignIn() {
+  const { error } = await supabase.rpc('touch_portal_profile_last_sign_in');
+  if (error) throw error;
 }

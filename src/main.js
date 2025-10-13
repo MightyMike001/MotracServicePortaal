@@ -1,4 +1,4 @@
-import { FLEET, USERS, setFleet, setLocations, setUsers } from './data.js';
+import { FLEET, USERS, setFleet, setLocations, setUsers, resetToDefaults } from './data.js';
 import { state } from './state.js';
 import { $, $$, fmtDate, showToast, openModal, closeModals, kv, formatOdoLabel } from './utils.js';
 import { populateLocationFilters, renderFleet } from './modules/fleet.js';
@@ -6,9 +6,22 @@ import { renderActivity } from './modules/activity.js';
 import { renderUsers } from './modules/users.js';
 import { openDetail, setDetailTab } from './modules/detail.js';
 import { setMainTab } from './modules/navigation.js';
-import { fetchFleet, fetchLocations, fetchUsers } from './api/supabase.js';
+import {
+  fetchFleet,
+  fetchLocations,
+  fetchUsers,
+  fetchProfileByAuthUserId,
+  getCurrentSession,
+  onAuthStateChange,
+  signInWithPassword,
+  signOut as supabaseSignOut,
+  touchProfileSignIn
+} from './api/supabase.js';
 
 function wireEvents() {
+  if (state.eventsWired) return;
+  state.eventsWired = true;
+
   function closeKebabMenus(except = null) {
     $$('.kebab-menu').forEach(menu => {
       if (menu !== except) {
@@ -24,7 +37,20 @@ function wireEvents() {
       $('#userMenu').classList.add('hidden');
     }
   });
-  $('#logoutBtn').addEventListener('click', () => showToast('Uitgelogd (prototype)'));
+  $('#logoutBtn').addEventListener('click', async () => {
+    try {
+      await supabaseSignOut();
+      showToast('Uitgelogd');
+    } catch (error) {
+      console.error('Uitloggen mislukt', error);
+      showToast('Uitloggen mislukt. Probeer opnieuw.');
+    }
+  });
+
+  const loginForm = $('#loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLoginSubmit);
+  }
 
   $$('#mainTabs button').forEach(button => button.addEventListener('click', () => setMainTab(button.dataset.tab)));
 
@@ -305,6 +331,195 @@ function wireEvents() {
   $$('#truckDetail [data-subtab]').forEach(button => button.addEventListener('click', () => setDetailTab(button.dataset.subtab)));
 }
 
+function setLoginStatus(message = '') {
+  const statusEl = $('#loginStatus');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.classList.toggle('hidden', !message);
+}
+
+function setLoginError(message = '') {
+  const errorEl = $('#loginError');
+  if (!errorEl) return;
+  errorEl.textContent = message;
+  errorEl.classList.toggle('hidden', !message);
+}
+
+function setLoginFormDisabled(disabled) {
+  const controls = ['#loginEmail', '#loginPassword', '#loginSubmit'].map(selector => $(selector));
+  controls.forEach(control => {
+    if (control) {
+      control.disabled = disabled;
+    }
+  });
+
+  const defaultLabel = $('#loginSubmitDefault');
+  const loadingLabel = $('#loginSubmitLoading');
+  if (defaultLabel && loadingLabel) {
+    defaultLabel.classList.toggle('hidden', disabled);
+    loadingLabel.classList.toggle('hidden', !disabled);
+  }
+}
+
+function showLoginPage() {
+  $('#loginPage')?.classList.remove('hidden');
+  $('#app')?.classList.add('hidden');
+  setLoginStatus('');
+  setLoginError('');
+  setLoginFormDisabled(false);
+  const emailInput = $('#loginEmail');
+  if (emailInput) {
+    emailInput.focus();
+  }
+  const passwordInput = $('#loginPassword');
+  if (passwordInput) {
+    passwordInput.value = '';
+  }
+}
+
+function showAppShell() {
+  $('#app')?.classList.remove('hidden');
+  $('#loginPage')?.classList.add('hidden');
+}
+
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+
+  const email = $('#loginEmail')?.value.trim();
+  const password = $('#loginPassword')?.value;
+
+  if (!email || !password) {
+    setLoginError('Vul zowel e-mailadres als wachtwoord in.');
+    return;
+  }
+
+  setLoginError('');
+  setLoginStatus('Bezig met inloggen…');
+  setLoginFormDisabled(true);
+
+  try {
+    await signInWithPassword({ email, password });
+  } catch (error) {
+    console.error('Inloggen mislukt', error);
+    const message =
+      error?.message === 'Invalid login credentials'
+        ? 'Onjuiste inloggegevens. Controleer e-mailadres en wachtwoord.'
+        : 'Inloggen mislukt. Probeer het opnieuw.';
+    setLoginError(message);
+    setLoginStatus('');
+    setLoginFormDisabled(false);
+  }
+}
+
+async function handleAuthenticatedSession(session, { forceReload = false } = {}) {
+  const currentToken = state.session?.access_token ?? null;
+  const nextToken = session?.access_token ?? null;
+
+  if (!forceReload && currentToken === nextToken) {
+    return;
+  }
+
+  state.session = session;
+
+  if (!session) {
+    state.profile = null;
+    state.hasLoadedInitialData = false;
+    resetToDefaults();
+    state.fleetFilter.location = 'Alle locaties';
+    state.fleetFilter.query = '';
+    state.selectedTruckId = null;
+    state.usersPage = 1;
+    state.usersPageSize = 10;
+    state.editUserId = null;
+    $('#currentUserName').textContent = 'Niet ingelogd';
+    $('#userMenuName')?.textContent = 'Niet ingelogd';
+    $('#userMenuEmail')?.textContent = '';
+    showLoginPage();
+    return;
+  }
+
+  setLoginStatus('Gegevens worden geladen…');
+
+  let profile = state.profile;
+  const shouldFetchProfile = forceReload || !profile || profile?.auth_user_id !== session.user.id;
+
+  if (shouldFetchProfile) {
+    try {
+      profile = await fetchProfileByAuthUserId(session.user.id);
+    } catch (error) {
+      console.error('Kon profielgegevens niet laden', error);
+    }
+  }
+
+  state.profile = profile ?? null;
+
+  const displayName =
+    profile?.display_name || session.user.user_metadata?.full_name || session.user.email || 'Ingelogde gebruiker';
+  $('#currentUserName').textContent = displayName;
+  $('#userMenuName')?.textContent = displayName;
+  $('#userMenuEmail')?.textContent = profile?.email || session.user.email || '';
+
+  if (forceReload) {
+    try {
+      await touchProfileSignIn();
+    } catch (rpcError) {
+      console.warn('Kon laatste inlogmoment niet bijwerken', rpcError);
+    }
+  }
+
+  const shouldReloadData = forceReload || !state.hasLoadedInitialData;
+  if (shouldReloadData) {
+    try {
+      await loadInitialData();
+    } catch (error) {
+      console.error('Kon data niet laden', error);
+      setLoginError('Er ging iets mis bij het laden van de gegevens. Probeer het later opnieuw.');
+      setLoginStatus('');
+      setLoginFormDisabled(false);
+      return;
+    }
+  }
+
+  populateLocationFilters();
+  renderFleet();
+  renderActivity();
+  renderUsers();
+  setMainTab('vloot');
+
+  showAppShell();
+  setLoginStatus('');
+  setLoginError('');
+  setLoginFormDisabled(false);
+  const passwordInput = $('#loginPassword');
+  if (passwordInput) {
+    passwordInput.value = '';
+  }
+}
+
+async function initializeAuth() {
+  try {
+    const { session } = await getCurrentSession();
+    await handleAuthenticatedSession(session, { forceReload: true });
+  } catch (error) {
+    console.error('Initieel ophalen van sessie mislukt', error);
+    showLoginPage();
+  }
+
+  const { data: listener, error: listenerError } = onAuthStateChange(async (event, session) => {
+    const shouldForceReload = event === 'SIGNED_IN';
+    await handleAuthenticatedSession(session, { forceReload: shouldForceReload });
+  });
+
+  if (listenerError) {
+    console.error('Kon Supabase auth listener niet initialiseren', listenerError);
+    return;
+  }
+
+  window.addEventListener('beforeunload', () => {
+    listener?.subscription?.unsubscribe?.();
+  });
+}
+
 async function loadInitialData() {
   const [locationsResult, fleetResult, usersResult] = await Promise.allSettled([
     fetchLocations(),
@@ -338,17 +553,11 @@ async function loadInitialData() {
   if (hadError) {
     showToast('Live data niet beschikbaar – voorbeelddata worden gebruikt.');
   }
+
+  state.hasLoadedInitialData = true;
 }
 
-async function init() {
-  await loadInitialData();
-  populateLocationFilters();
-  renderFleet();
-  renderActivity();
-  renderUsers();
+document.addEventListener('DOMContentLoaded', async () => {
   wireEvents();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  init();
+  await initializeAuth();
 });
