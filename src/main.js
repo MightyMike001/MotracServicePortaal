@@ -3,10 +3,70 @@ import { state } from './state.js';
 import { $, $$, fmtDate, showToast, openModal, closeModals, kv, formatOdoLabel } from './utils.js';
 import { populateLocationFilters, renderFleet } from './modules/fleet.js';
 import { renderActivity } from './modules/activity.js';
-import { renderUsers } from './modules/users.js';
+import { renderAccountRequests, renderUsers } from './modules/users.js';
 import { openDetail, setDetailTab } from './modules/detail.js';
 import { canViewFleetAsset } from './modules/access.js';
 import { setMainTab } from './modules/navigation.js';
+import { resolveEnvironment } from './environment.js';
+
+function getFleetSummaryById(fleetId) {
+  if (!fleetId) return null;
+  const matches = FLEET.filter(item => item?.fleetId === fleetId);
+  if (!matches.length) {
+    return null;
+  }
+
+  const locations = Array.from(new Set(matches.map(item => item.location).filter(Boolean)));
+  return {
+    id: fleetId,
+    name: matches[0]?.fleetName || '—',
+    locations
+  };
+}
+
+function switchMainTab(tab) {
+  const allowedTabs = Array.isArray(state.allowedTabs) && state.allowedTabs.length
+    ? state.allowedTabs
+    : ['vloot', 'activiteit', 'users'];
+  const fallback = allowedTabs[0] || 'vloot';
+  const targetTab = allowedTabs.includes(tab) ? tab : fallback;
+  state.activeTab = targetTab;
+  setMainTab(targetTab);
+}
+
+function applyEnvironmentForRole(role) {
+  const environment = resolveEnvironment(role);
+  state.activeEnvironmentKey = environment.key;
+  state.allowedTabs = [...environment.allowedTabs];
+
+  const nameEl = $('#environmentName');
+  if (nameEl) {
+    nameEl.textContent = environment.label;
+  }
+
+  const badgeEl = $('#environmentBadge');
+  if (badgeEl) {
+    badgeEl.textContent = environment.label;
+  }
+
+  const summaryEl = $('#environmentSummary');
+  if (summaryEl) {
+    summaryEl.textContent = environment.summary;
+  }
+
+  $$('#mainTabs button').forEach(button => {
+    const allowed = environment.allowedTabs.includes(button.dataset.tab);
+    const listItem = button.closest('li');
+    if (listItem) {
+      listItem.classList.toggle('hidden', !allowed);
+    }
+    button.disabled = !allowed;
+    button.classList.toggle('opacity-40', !allowed);
+  });
+
+  switchMainTab(state.activeTab);
+  renderAccountRequests();
+}
 import {
   fetchFleet,
   fetchLocations,
@@ -54,7 +114,25 @@ function wireEvents() {
     loginForm.addEventListener('submit', handleLoginSubmit);
   }
 
-  $$('#mainTabs button').forEach(button => button.addEventListener('click', () => setMainTab(button.dataset.tab)));
+  $$('#mainTabs button').forEach(button =>
+    button.addEventListener('click', () => {
+      if (button.disabled) return;
+      switchMainTab(button.dataset.tab);
+    })
+  );
+
+  $('#openAccountRequest')?.addEventListener('click', () => {
+    const form = $('#accountRequestForm');
+    if (form?.reset) {
+      form.reset();
+    }
+    openModal('#modalAccountRequest');
+  });
+
+  const accountRequestForm = $('#accountRequestForm');
+  if (accountRequestForm) {
+    accountRequestForm.addEventListener('submit', handleAccountRequestSubmit);
+  }
 
   $('#locationFilter').addEventListener('change', event => {
     state.fleetFilter.location = event.target.value;
@@ -151,6 +229,12 @@ function wireEvents() {
     }
   });
 
+  document.addEventListener('click', event => {
+    const requestButton = event.target.closest('[data-request-action]');
+    if (!requestButton) return;
+    handleAccountRequestAction(requestButton);
+  });
+
   document.querySelectorAll('.modal [data-close]').forEach(button => button.addEventListener('click', closeModals));
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeModals();
@@ -182,7 +266,7 @@ function wireEvents() {
     closeModals();
     renderFleet();
     renderActivity();
-    setMainTab('activiteit');
+    switchMainTab('activiteit');
     showToast('Servicemelding aangemaakt.');
 
     $('#ticketOrder').value = '';
@@ -343,7 +427,7 @@ function wireEvents() {
   });
 
   $('#backToFleet').addEventListener('click', () => {
-    setMainTab('vloot');
+    switchMainTab('vloot');
   });
 
   $$('#truckDetail [data-subtab]').forEach(button => button.addEventListener('click', () => setDetailTab(button.dataset.subtab)));
@@ -429,6 +513,98 @@ async function handleLoginSubmit(event) {
   }
 }
 
+function handleAccountRequestSubmit(event) {
+  event.preventDefault();
+
+  const name = $('#requestName')?.value.trim();
+  const organisation = $('#requestOrganisation')?.value.trim();
+  const email = $('#requestEmail')?.value.trim();
+  const phone = $('#requestPhone')?.value.trim();
+  const requestedRole = $('#requestRole')?.value || 'Gebruiker';
+  const requestNotes = $('#requestNotes')?.value.trim();
+
+  if (!name || !organisation || !email) {
+    showToast('Naam, organisatie en e-mailadres zijn verplicht.');
+    return;
+  }
+
+  const newRequest = {
+    id: `R${Date.now()}`,
+    name,
+    organisation,
+    email,
+    phone,
+    requestedRole,
+    requestNotes,
+    status: 'pending',
+    submittedAt: new Date().toISOString()
+  };
+
+  state.accountRequests.unshift(newRequest);
+
+  const form = event.target;
+  if (typeof form.reset === 'function') {
+    form.reset();
+  }
+
+  closeModals();
+  renderAccountRequests();
+  showToast('Uw aanvraag is ontvangen. Een beheerder koppelt deze zo snel mogelijk.');
+}
+
+function handleAccountRequestAction(button) {
+  const action = button.dataset.requestAction;
+  const requestId = button.dataset.id;
+  if (!action || !requestId) return;
+
+  const request = state.accountRequests.find(item => item.id === requestId);
+  if (!request) return;
+
+  const container = button.closest('[data-request]');
+  if (!container) return;
+
+  if (action === 'reject') {
+    request.status = 'rejected';
+    request.assignedRole = null;
+    request.assignedFleetId = null;
+    request.assignedFleetName = null;
+    request.completedAt = new Date().toISOString();
+    renderAccountRequests();
+    showToast(`Aanvraag van ${request.name} geweigerd.`);
+    return;
+  }
+
+  if (action !== 'approve') {
+    return;
+  }
+
+  const roleSelect = container.querySelector('[data-request-role]');
+  const fleetSelect = container.querySelector('[data-request-fleet]');
+  const selectedRole = roleSelect?.value || 'Gebruiker';
+  const selectedFleetId = fleetSelect?.value || '';
+  const fleetSummary = getFleetSummaryById(selectedFleetId);
+  const newUserLocation = fleetSummary?.locations?.[0] || request.organisation || '—';
+  const assignedFleetName = fleetSummary?.name || (selectedFleetId ? '—' : request.organisation || '—');
+
+  USERS.push({
+    id: `U${Math.floor(Math.random() * 10000)}`,
+    name: request.name,
+    email: request.email,
+    phone: request.phone || '',
+    location: newUserLocation,
+    role: selectedRole
+  });
+
+  request.status = 'approved';
+  request.assignedRole = selectedRole;
+  request.assignedFleetId = selectedFleetId || null;
+  request.assignedFleetName = assignedFleetName;
+  request.completedAt = new Date().toISOString();
+
+  renderUsers();
+  showToast(`Account toegekend aan ${request.name}.`);
+}
+
 async function handleAuthenticatedSession(session, { forceReload = false } = {}) {
   const currentToken = state.session?.access_token ?? null;
   const nextToken = session?.access_token ?? null;
@@ -450,6 +626,9 @@ async function handleAuthenticatedSession(session, { forceReload = false } = {})
     state.usersPage = 1;
     state.usersPageSize = 10;
     state.editUserId = null;
+    state.allowedTabs = ['vloot', 'activiteit', 'users'];
+    state.activeEnvironmentKey = 'beheerder';
+    state.activeTab = 'vloot';
     $('#currentUserName').textContent = 'Niet ingelogd';
     $('#userMenuName')?.textContent = 'Niet ingelogd';
     $('#userMenuEmail')?.textContent = '';
@@ -503,7 +682,8 @@ async function handleAuthenticatedSession(session, { forceReload = false } = {})
   renderFleet();
   renderActivity();
   renderUsers();
-  setMainTab('vloot');
+  state.activeTab = 'vloot';
+  applyEnvironmentForRole(profile?.role);
 
   showAppShell();
   setLoginStatus('');
