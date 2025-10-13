@@ -7,7 +7,7 @@ export const fmtDate = iso => {
   return Number.isNaN(date.valueOf()) ? '—' : date.toLocaleDateString('nl-NL');
 };
 
-export const formatOdoValue = value => {
+const formatNumericValue = value => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value.toLocaleString('nl-NL');
   }
@@ -20,8 +20,8 @@ export const formatOdoValue = value => {
   return '—';
 };
 
-export const formatOdoHtml = (value, date) => {
-  const odo = formatOdoValue(value);
+const formatNumericHtml = (value, date) => {
+  const odo = formatNumericValue(value);
   const formattedDate = fmtDate(date);
   if (formattedDate === '—') {
     return odo;
@@ -29,11 +29,19 @@ export const formatOdoHtml = (value, date) => {
   return `${odo} <span class="text-xs text-gray-500">(${formattedDate})</span>`;
 };
 
-export const formatOdoLabel = (value, date) => {
-  const odo = formatOdoValue(value);
+const formatNumericLabel = (value, date) => {
+  const odo = formatNumericValue(value);
   const formattedDate = fmtDate(date);
   return formattedDate === '—' ? odo : `${odo} (${formattedDate})`;
 };
+
+export const formatHoursValue = formatNumericValue;
+export const formatHoursHtml = formatNumericHtml;
+export const formatHoursLabel = formatNumericLabel;
+
+export const formatOdoValue = formatNumericValue;
+export const formatOdoHtml = formatNumericHtml;
+export const formatOdoLabel = formatNumericLabel;
 
 export function showToast(message) {
   const toast = $('#toast');

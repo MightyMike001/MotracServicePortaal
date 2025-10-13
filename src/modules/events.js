@@ -1,6 +1,6 @@
 import { FLEET, USERS } from '../data.js';
 import { state } from '../state.js';
-import { $, $$, fmtDate, showToast, openModal, closeModals, kv, formatOdoLabel } from '../utils.js';
+import { $, $$, fmtDate, showToast, openModal, closeModals, kv, formatHoursLabel } from '../utils.js';
 import { renderFleet } from './fleet.js';
 import { renderActivity } from './activity.js';
 import { renderUsers } from './users.js';
@@ -145,7 +145,7 @@ export function wireEvents() {
     if (action === 'updateOdo' || action === 'updateOdoFromDetail') {
       const odoCurrent = $('#odoCurrent');
       if (odoCurrent) {
-        odoCurrent.textContent = formatOdoLabel(truck.odo, truck.odoDate);
+        odoCurrent.textContent = formatHoursLabel(truck.hours, truck.hoursDate);
       }
       const odoInput = $('#odoNew');
       if (odoInput) {
@@ -234,6 +234,7 @@ export function wireEvents() {
       status: 'Open',
       date: new Date().toISOString()
     });
+    truck.openActivityCount = truck.activity.filter(activity => activity?.status === 'Open').length;
 
     closeModals();
     renderFleet();
@@ -255,21 +256,23 @@ export function wireEvents() {
     }
     const odoInput = $('#odoNew');
     if (!odoInput) {
-      showToast('Geen veld voor tellerstand gevonden.');
+      showToast('Geen veld voor urenstand gevonden.');
       return;
     }
     const value = parseInt(odoInput.value, 10);
-    const currentOdo = typeof truck.odo === 'number' && Number.isFinite(truck.odo) ? truck.odo : null;
-    if (Number.isNaN(value) || value < 0 || (currentOdo !== null && value < currentOdo)) {
-      showToast('Nieuwe tellerstand moet ≥ huidige zijn.');
+    const currentHours = typeof truck.hours === 'number' && Number.isFinite(truck.hours) ? truck.hours : null;
+    if (Number.isNaN(value) || value < 0 || (currentHours !== null && value < currentHours)) {
+      showToast('Nieuwe urenstand moet ≥ huidige zijn.');
       return;
     }
+    truck.hours = value;
+    truck.hoursDate = new Date().toISOString();
     truck.odo = value;
-    truck.odoDate = new Date().toISOString();
+    truck.odoDate = truck.hoursDate;
     closeModals();
     renderFleet();
     setDetailTab('info');
-    showToast('Tellerstand bijgewerkt.');
+    showToast('Urenstand bijgewerkt.');
   });
 
   $('#refSave')?.addEventListener('click', event => {

@@ -57,10 +57,13 @@ create table if not exists public.fleet_assets (
   id text primary key,
   reference text,
   model text not null,
+  model_type text,
   bmw_status public.bmw_status not null default 'Goedgekeurd',
   bmw_expiry date,
   odo integer,
   odo_date date,
+  hours integer,
+  hours_date date,
   location_id uuid not null references public.locations(id) on delete restrict,
   customer_fleet_id uuid references public.customer_fleets(id) on delete set null,
   active boolean not null default true,
@@ -91,6 +94,11 @@ execute function public.set_updated_at();
 
 alter table if exists public.fleet_assets
   add column if not exists customer_fleet_id uuid references public.customer_fleets(id) on delete set null;
+
+alter table if exists public.fleet_assets
+  add column if not exists model_type text,
+  add column if not exists hours integer,
+  add column if not exists hours_date date;
 
 create table if not exists public.fleet_contracts (
   id uuid primary key default gen_random_uuid(),
@@ -532,15 +540,19 @@ select
   asset.id,
   asset.reference,
   asset.model,
+  asset.model_type,
   asset.bmw_status,
   asset.bmw_expiry,
   asset.odo,
   asset.odo_date,
+  asset.hours,
+  asset.hours_date,
   asset.active,
   asset.customer_fleet_id,
   fleet.name as customer_fleet_name,
   loc.name as location_name,
   coalesce(contract_data.contract, '{}'::jsonb) as contract,
+  coalesce(activity_data.open_count, 0) as open_activity_count,
   coalesce(activity_data.activity, '[]'::jsonb) as activity
 from public.fleet_assets asset
 left join public.customer_fleets fleet on fleet.id = asset.customer_fleet_id
@@ -551,16 +563,18 @@ left join lateral (
   where fc.fleet_id = asset.id
 ) contract_data on true
 left join lateral (
-  select jsonb_agg(
-    jsonb_build_object(
-      'activity_code', fa.activity_code,
-      'activity_type', fa.activity_type,
-      'description', fa.description,
-      'status', fa.status,
-      'activity_date', fa.activity_date
-    )
-    order by fa.activity_date desc, fa.created_at desc
-  ) as activity
+  select
+    jsonb_agg(
+      jsonb_build_object(
+        'activity_code', fa.activity_code,
+        'activity_type', fa.activity_type,
+        'description', fa.description,
+        'status', fa.status,
+        'activity_date', fa.activity_date
+      )
+      order by fa.activity_date desc, fa.created_at desc
+    ) as activity,
+    count(*) filter (where fa.status = 'Open') as open_count
   from public.fleet_activity fa
   where fa.fleet_id = asset.id
 ) activity_data on true;

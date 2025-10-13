@@ -244,12 +244,16 @@
             <thead>
               <tr class="text-left text-gray-600 border-b">
                 <th class="py-3 px-3">Serienummer / Referentie</th>
-                <th class="py-3 px-3">Vloot</th>
+                <th class="py-3 px-3">Modeltype</th>
                 <th class="py-3 px-3">Model</th>
                 <th class="py-3 px-3">BMWT‑status</th>
                 <th class="py-3 px-3">BMWT‑vervaldatum</th>
-                <th class="py-3 px-3">Tellerstand (datum)</th>
-                <th class="py-3 px-3">Activiteit</th>
+                <th class="py-3 px-3">Locatie</th>
+                <th class="py-3 px-3">Urenstand (datum)</th>
+                <th class="py-3 px-3">Contractnummer</th>
+                <th class="py-3 px-3">Contract startdatum</th>
+                <th class="py-3 px-3">Contract einddatum</th>
+                <th class="py-3 px-3">Openstaande meldingen</th>
                 <th class="py-3 px-3 text-right">Acties</th>
               </tr>
             </thead>
@@ -344,13 +348,13 @@
           </div>
           <div class="hidden sm:flex items-center gap-2">
             <button class="px-3 py-2 border rounded-lg" data-action="newTicketFromDetail">Melding aanmaken</button>
-            <button class="px-3 py-2 border rounded-lg" data-action="updateOdo">Tellerstand doorgeven</button>
+            <button class="px-3 py-2 border rounded-lg" data-action="updateOdo">Urenstand doorgeven</button>
             <button class="px-3 py-2 border rounded-lg" data-action="editRef">Uw referentie wijzigen</button>
           </div>
         </div>
         <div class="grid grid-cols-1 sm:hidden gap-2">
           <button class="px-3 py-2 border rounded-lg text-sm" data-action="newTicketFromDetail">Melding aanmaken</button>
-          <button class="px-3 py-2 border rounded-lg text-sm" data-action="updateOdo">Tellerstand doorgeven</button>
+          <button class="px-3 py-2 border rounded-lg text-sm" data-action="updateOdo">Urenstand doorgeven</button>
           <button class="px-3 py-2 border rounded-lg text-sm" data-action="editRef">Uw referentie wijzigen</button>
         </div>
 
@@ -408,16 +412,16 @@
     </div>
   </div>
 
-  <!-- Tellerstand doorgeven -->
+  <!-- Urenstand doorgeven -->
   <div id="modalOdo" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Tellerstand doorgeven</h3>
+        <h3 class="text-lg font-semibold">Urenstand doorgeven</h3>
         <button data-close class="text-gray-500">✕</button>
       </div>
       <div class="space-y-2">
-        <div class="text-sm text-gray-600">Huidige tellerstand: <span id="odoCurrent" class="font-medium text-gray-800">—</span></div>
-        <label class="text-sm text-gray-600">Nieuwe tellerstand</label>
+        <div class="text-sm text-gray-600">Huidige urenstand: <span id="odoCurrent" class="font-medium text-gray-800">—</span></div>
+        <label class="text-sm text-gray-600">Nieuwe urenstand</label>
         <input id="odoNew" type="number" class="w-full border rounded-lg px-3 py-2" />
       </div>
       <div class="mt-6 flex justify-end gap-2">
