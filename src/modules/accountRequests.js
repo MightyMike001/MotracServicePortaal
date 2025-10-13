@@ -70,6 +70,12 @@ export async function handleAccountRequestAction(button) {
   const request = state.accountRequests.find(item => item.id === requestId);
   if (!request) return;
 
+  if (request.status !== 'pending') {
+    showToast('Deze aanvraag is al verwerkt.');
+    renderAccountRequests();
+    return;
+  }
+
   const container = button.closest('[data-request]');
   if (!container) return;
 

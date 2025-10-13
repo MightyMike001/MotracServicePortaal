@@ -4,45 +4,80 @@ import { $, fmtDate, formatOdoHtml } from '../utils.js';
 import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
 
 export function populateLocationFilters() {
+  const locationFilter = $('#locationFilter');
+  const activityFilter = $('#activityLocationFilter');
+  const userLocationSelect = $('#userLocation');
+  const ticketSelect = $('#ticketTruck');
+
+  const baseLocations = Array.isArray(LOCATIONS) && LOCATIONS.length ? LOCATIONS : ['Alle locaties'];
   const accessibleFleet = filterFleetByAccess(FLEET);
-  const accessibleLocationSet = new Set(accessibleFleet.map(truck => truck.location).filter(Boolean));
-  const allowedLocations = LOCATIONS.filter(location => location === 'Alle locaties' || accessibleLocationSet.has(location));
+  const accessibleLocationSet = new Set(
+    accessibleFleet
+      .map(truck => truck?.location)
+      .filter(location => typeof location === 'string' && location.trim() !== '')
+  );
+
+  let allowedLocations = baseLocations.filter(
+    location => location === 'Alle locaties' || accessibleLocationSet.has(location)
+  );
+
+  if (!allowedLocations.length) {
+    allowedLocations = baseLocations.includes('Alle locaties') ? ['Alle locaties'] : [baseLocations[0]];
+  }
+
   const resolvedLocation = ensureAccessibleLocation(state.fleetFilter.location, allowedLocations);
   state.fleetFilter.location = resolvedLocation;
 
-  const locOptions = allowedLocations.map(location => {
-    const selected = location === state.fleetFilter.location ? 'selected' : '';
-    return `<option ${selected}>${location}</option>`;
-  }).join('');
-  $('#locationFilter').innerHTML = locOptions;
-  $('#activityLocationFilter').innerHTML = allowedLocations.map(location => `<option>${location}</option>`).join('');
-  $('#activityLocationFilter').value = allowedLocations.includes('Alle locaties') ? 'Alle locaties' : allowedLocations[0] || '';
+  if (locationFilter) {
+    locationFilter.innerHTML = allowedLocations
+      .map(location => {
+        const selected = location === state.fleetFilter.location ? 'selected' : '';
+        return `<option ${selected}>${location}</option>`;
+      })
+      .join('');
+  }
 
-  $('#userLocation').innerHTML = allowedLocations
-    .filter(location => location !== 'Alle locaties')
-    .map(location => `<option>${location}</option>`)
-    .join('');
+  if (activityFilter) {
+    activityFilter.innerHTML = allowedLocations.map(location => `<option>${location}</option>`).join('');
+    const activityValue = allowedLocations.includes('Alle locaties') ? 'Alle locaties' : allowedLocations[0] || '';
+    activityFilter.value = activityValue;
+  }
 
-  const activeAccessibleFleet = accessibleFleet.filter(truck => truck.active);
-  $('#ticketTruck').innerHTML = activeAccessibleFleet
-    .map(truck => `<option value="${truck.id}">${truck.id} — ${truck.location}</option>`)
-    .join('');
+  if (userLocationSelect) {
+    userLocationSelect.innerHTML = allowedLocations
+      .filter(location => location !== 'Alle locaties')
+      .map(location => `<option>${location}</option>`)
+      .join('');
+  }
+
+  if (ticketSelect) {
+    const activeAccessibleFleet = accessibleFleet.filter(truck => truck?.active);
+    ticketSelect.innerHTML = activeAccessibleFleet
+      .map(truck => `<option value="${truck.id}">${truck.id} — ${truck.location || 'Onbekende locatie'}</option>`)
+      .join('');
+  }
 }
 
 function filteredFleet() {
   const query = state.fleetFilter.query.trim().toLowerCase();
   return filterFleetByAccess(FLEET)
-    .filter(truck => truck.active)
+    .filter(truck => truck?.active)
     .filter(truck => state.fleetFilter.location === 'Alle locaties' || truck.location === state.fleetFilter.location)
     .filter(truck => {
       if (!query) return true;
-      return [truck.id, truck.ref, truck.model].some(value => String(value).toLowerCase().includes(query));
+      return [truck.id, truck.ref, truck.model]
+        .map(value => (value == null ? '' : String(value)))
+        .some(value => value.toLowerCase().includes(query));
     });
 }
 
 export function renderFleet() {
+  const tableBody = $('#fleetTbody');
+  if (!tableBody) return;
+
   const rows = filteredFleet().map(truck => {
-    const openCount = truck.activity.filter(activity => activity.status === 'Open').length;
+    const activityList = Array.isArray(truck.activity) ? truck.activity : [];
+    const openCount = activityList.filter(activity => activity?.status === 'Open').length;
     return `
       <tr class="border-b hover:bg-gray-50">
         <td class="py-3 px-3" data-label="Serienummer / Referentie">
@@ -74,6 +109,6 @@ export function renderFleet() {
       </tr>`;
   }).join('');
 
-  $('#fleetTbody').innerHTML =
+  tableBody.innerHTML =
     rows || '<tr><td colspan="8" class="py-6 px-3 text-center text-gray-500">Geen resultaten</td></tr>';
 }
