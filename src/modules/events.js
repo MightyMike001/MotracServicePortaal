@@ -44,14 +44,14 @@ export function wireEvents() {
     collapseMobileMenu();
   });
 
-  $('#userBtn').addEventListener('click', () => $('#userMenu').classList.toggle('hidden'));
-  $('#cancelUserMenu').addEventListener('click', () => $('#userMenu').classList.add('hidden'));
+  $('#userBtn')?.addEventListener('click', () => $('#userMenu')?.classList.toggle('hidden'));
+  $('#cancelUserMenu')?.addEventListener('click', () => $('#userMenu')?.classList.add('hidden'));
   document.addEventListener('click', event => {
     if (!event.target.closest('#userBtn') && !event.target.closest('#userMenu')) {
-      $('#userMenu').classList.add('hidden');
+      $('#userMenu')?.classList.add('hidden');
     }
   });
-  $('#logoutBtn').addEventListener('click', signOut);
+  $('#logoutBtn')?.addEventListener('click', signOut);
 
   const loginForm = $('#loginForm');
   if (loginForm) {
@@ -81,7 +81,7 @@ export function wireEvents() {
     accountRequestForm.addEventListener('submit', handleAccountRequestSubmit);
   }
 
-  $('#locationFilter').addEventListener('change', event => {
+  $('#locationFilter')?.addEventListener('change', event => {
     state.fleetFilter.location = event.target.value;
     renderFleet();
   });
@@ -90,8 +90,8 @@ export function wireEvents() {
     renderFleet();
   };
 
-  $('#searchBtn').addEventListener('click', applyFleetSearch);
-  $('#searchInput').addEventListener('keydown', event => {
+  $('#searchBtn')?.addEventListener('click', applyFleetSearch);
+  $('#searchInput')?.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
       event.preventDefault();
       applyFleetSearch();
@@ -134,23 +134,44 @@ export function wireEvents() {
     if (!truck || !canViewFleetAsset(truck)) return;
 
     if (action === 'newTicket' || action === 'newTicketFromDetail') {
-      $('#ticketTruck').value = truck.id;
+      const ticketSelect = $('#ticketTruck');
+      if (ticketSelect) {
+        ticketSelect.value = truck.id;
+      }
       openModal('#modalTicket');
       return;
     }
 
     if (action === 'updateOdo' || action === 'updateOdoFromDetail') {
-      $('#odoCurrent').textContent = formatOdoLabel(truck.odo, truck.odoDate);
-      $('#odoNew').value = '';
-      $('#odoSave').dataset.id = id;
+      const odoCurrent = $('#odoCurrent');
+      if (odoCurrent) {
+        odoCurrent.textContent = formatOdoLabel(truck.odo, truck.odoDate);
+      }
+      const odoInput = $('#odoNew');
+      if (odoInput) {
+        odoInput.value = '';
+      }
+      const odoSaveButton = $('#odoSave');
+      if (odoSaveButton) {
+        odoSaveButton.dataset.id = id;
+      }
       openModal('#modalOdo');
       return;
     }
 
     if (action === 'editRef' || action === 'editRefFromDetail') {
-      $('#refCurrent').textContent = truck.ref;
-      $('#refNew').value = truck.ref;
-      $('#refSave').dataset.id = id;
+      const refCurrent = $('#refCurrent');
+      if (refCurrent) {
+        refCurrent.textContent = truck.ref;
+      }
+      const refInput = $('#refNew');
+      if (refInput) {
+        refInput.value = truck.ref;
+      }
+      const refSaveButton = $('#refSave');
+      if (refSaveButton) {
+        refSaveButton.dataset.id = id;
+      }
       openModal('#modalRef');
       return;
     }
@@ -192,10 +213,10 @@ export function wireEvents() {
     openModal('#modalTicket');
     collapseMobileMenu();
   });
-  $('#ticketCreate').addEventListener('click', () => {
-    const id = $('#ticketTruck').value;
-    const type = $('#ticketType').value;
-    const desc = $('#ticketDesc').value.trim();
+  $('#ticketCreate')?.addEventListener('click', () => {
+    const id = $('#ticketTruck')?.value;
+    const type = $('#ticketType')?.value;
+    const desc = $('#ticketDesc')?.value.trim();
     if (!id || !desc) {
       showToast('Vul minimaal truck en omschrijving in.');
       return;
@@ -220,19 +241,24 @@ export function wireEvents() {
     switchMainTab('activiteit');
     showToast('Servicemelding aangemaakt.');
 
-    $('#ticketOrder').value = '';
-    $('#ticketDesc').value = '';
-    $('#ticketPhotos').value = '';
+    $('#ticketOrder')?.value = '';
+    $('#ticketDesc')?.value = '';
+    $('#ticketPhotos')?.value = '';
   });
 
-  $('#odoSave').addEventListener('click', event => {
+  $('#odoSave')?.addEventListener('click', event => {
     const id = event.target.dataset.id;
     const truck = FLEET.find(item => item.id === id);
     if (!truck || !canViewFleetAsset(truck)) {
       showToast('U heeft geen toegang tot dit object.');
       return;
     }
-    const value = parseInt($('#odoNew').value, 10);
+    const odoInput = $('#odoNew');
+    if (!odoInput) {
+      showToast('Geen veld voor tellerstand gevonden.');
+      return;
+    }
+    const value = parseInt(odoInput.value, 10);
     const currentOdo = typeof truck.odo === 'number' && Number.isFinite(truck.odo) ? truck.odo : null;
     if (Number.isNaN(value) || value < 0 || (currentOdo !== null && value < currentOdo)) {
       showToast('Nieuwe tellerstand moet ≥ huidige zijn.');
@@ -246,14 +272,15 @@ export function wireEvents() {
     showToast('Tellerstand bijgewerkt.');
   });
 
-  $('#refSave').addEventListener('click', event => {
+  $('#refSave')?.addEventListener('click', event => {
     const id = event.target.dataset.id;
     const truck = FLEET.find(item => item.id === id);
     if (!truck || !canViewFleetAsset(truck)) {
       showToast('U heeft geen toegang tot dit object.');
       return;
     }
-    const value = $('#refNew').value.trim();
+    const refInput = $('#refNew');
+    const value = refInput?.value.trim();
     if (!value) {
       showToast('Referentie mag niet leeg zijn.');
       return;
@@ -265,10 +292,10 @@ export function wireEvents() {
     showToast('Referentie bijgewerkt.');
   });
 
-  $('#inactiveConfirm').addEventListener('click', event => {
+  $('#inactiveConfirm')?.addEventListener('click', event => {
     const id = event.target.dataset.id;
-    const date = $('#inactiveDate').value;
-    const reason = $('#inactiveReason').value.trim();
+    const date = $('#inactiveDate')?.value;
+    const reason = $('#inactiveReason')?.value.trim();
     if (!date || !reason) {
       showToast('Datum en reden zijn verplicht.');
       return;
@@ -285,20 +312,20 @@ export function wireEvents() {
     showToast('Truck gemarkeerd als inactief.');
   });
 
-  $('#activityLocationFilter').addEventListener('change', renderActivity);
+  $('#activityLocationFilter')?.addEventListener('change', renderActivity);
   const applyActivitySearch = () => {
     renderActivity();
   };
 
-  $('#activitySearchBtn').addEventListener('click', applyActivitySearch);
-  $('#activitySearchInput').addEventListener('keydown', event => {
+  $('#activitySearchBtn')?.addEventListener('click', applyActivitySearch);
+  $('#activitySearchInput')?.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
       event.preventDefault();
       applyActivitySearch();
     }
   });
 
-  $('#btnAddUser').addEventListener('click', () => {
+  $('#btnAddUser')?.addEventListener('click', () => {
     state.editUserId = null;
     $('#userModalTitle').textContent = 'Gebruiker toevoegen';
     $('#userName').value = '';
@@ -335,7 +362,7 @@ export function wireEvents() {
     }
   });
 
-  $('#userSave').addEventListener('click', () => {
+  $('#userSave')?.addEventListener('click', () => {
     const name = $('#userName').value.trim();
     const email = $('#userEmail').value.trim();
     const phone = $('#userPhone').value.trim();
@@ -360,24 +387,24 @@ export function wireEvents() {
     renderUsers();
   });
 
-  $('#usersPrev').addEventListener('click', () => {
+  $('#usersPrev')?.addEventListener('click', () => {
     if (state.usersPage > 1) {
       state.usersPage -= 1;
       renderUsers();
     }
   });
 
-  $('#usersNext').addEventListener('click', () => {
+  $('#usersNext')?.addEventListener('click', () => {
     state.usersPage += 1;
     renderUsers();
   });
 
-  $('#usersPageSize').addEventListener('change', () => {
+  $('#usersPageSize')?.addEventListener('change', () => {
     state.usersPage = 1;
     renderUsers();
   });
 
-  $('#backToFleet').addEventListener('click', () => {
+  $('#backToFleet')?.addEventListener('click', () => {
     switchMainTab('vloot');
   });
 

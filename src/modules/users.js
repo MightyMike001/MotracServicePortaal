@@ -147,12 +147,13 @@ export function renderAccountRequests() {
   const card = $('#accountRequestsCard');
   if (!card) return;
 
+  const requests = Array.isArray(state.accountRequests) ? state.accountRequests : [];
   const canManageRequests = state.allowedTabs?.includes('users');
   card.classList.toggle('hidden', !canManageRequests);
   if (!canManageRequests) return;
 
-  const pending = state.accountRequests.filter(request => request.status === 'pending');
-  const resolved = state.accountRequests.filter(request => request.status !== 'pending');
+  const pending = requests.filter(request => request.status === 'pending');
+  const resolved = requests.filter(request => request.status !== 'pending');
 
   const summaryEl = $('#accountRequestsSummary');
   if (summaryEl) {
@@ -177,7 +178,23 @@ export function renderAccountRequests() {
 }
 
 export function renderUsers() {
-  state.usersPageSize = parseInt($('#usersPageSize').value, 10) || state.usersPageSize;
+  const pageSizeInput = $('#usersPageSize');
+  const tableBody = $('#usersTbody');
+  const pageInfo = $('#usersPageInfo');
+  const prevButton = $('#usersPrev');
+  const nextButton = $('#usersNext');
+
+  if (!tableBody || !pageInfo || !prevButton || !nextButton) {
+    return;
+  }
+
+  const parsedPageSize = parseInt(pageSizeInput?.value, 10);
+  if (Number.isInteger(parsedPageSize) && parsedPageSize > 0) {
+    state.usersPageSize = parsedPageSize;
+  } else if (pageSizeInput && state.usersPageSize > 0) {
+    pageSizeInput.value = String(state.usersPageSize);
+  }
+
   const totalPages = Math.max(1, Math.ceil(USERS.length / state.usersPageSize));
   if (state.usersPage > totalPages) {
     state.usersPage = totalPages;
@@ -186,7 +203,8 @@ export function renderUsers() {
   const start = (state.usersPage - 1) * state.usersPageSize;
   const pageItems = USERS.slice(start, start + state.usersPageSize);
 
-  $('#usersTbody').innerHTML = pageItems.map(user => `
+  tableBody.innerHTML = pageItems
+    .map(user => `
     <tr class="border-b hover:bg-gray-50">
       <td class="py-3 px-3" data-label="Gebruiker">
         <div class="font-medium">${user.name}</div>
@@ -204,11 +222,17 @@ export function renderUsers() {
           </div>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`)
+    .join('');
 
-  $('#usersPageInfo').textContent = `Pagina ${state.usersPage} van ${totalPages}`;
-  $('#usersPrev').disabled = state.usersPage <= 1;
-  $('#usersNext').disabled = state.usersPage >= totalPages;
+  if (!pageItems.length) {
+    tableBody.innerHTML =
+      '<tr><td colspan="5" class="py-6 px-3 text-center text-gray-500">Geen gebruikers gevonden</td></tr>';
+  }
+
+  pageInfo.textContent = `Pagina ${state.usersPage} van ${totalPages}`;
+  prevButton.disabled = state.usersPage <= 1;
+  nextButton.disabled = state.usersPage >= totalPages;
 
   renderAccountRequests();
 }

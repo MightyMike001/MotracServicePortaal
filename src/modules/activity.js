@@ -4,21 +4,30 @@ import { filterFleetByAccess } from './access.js';
 
 export function renderActivity() {
   const container = $('#activityList');
-  const query = $('#activitySearchInput').value.trim().toLowerCase();
-  const location = $('#activityLocationFilter').value;
+  const searchInput = $('#activitySearchInput');
+  const locationFilter = $('#activityLocationFilter');
+
+  if (!container || !searchInput || !locationFilter) {
+    return;
+  }
+
+  const query = searchInput.value.trim().toLowerCase();
+  const location = locationFilter.value;
   const items = [];
 
   filterFleetByAccess(FLEET).forEach(truck => {
-    if (!truck.active) return;
+    if (!truck?.active) return;
     if (location !== 'Alle locaties' && truck.location !== location) return;
-    truck.activity.forEach(activity => {
+    const activities = Array.isArray(truck.activity) ? truck.activity : [];
+    activities.forEach(activity => {
       const text = `${activity.id} ${activity.type} ${activity.desc} ${truck.id}`.toLowerCase();
       if (query && !text.includes(query)) return;
       items.push({ truck, activity });
     });
   });
 
-  container.innerHTML = items.map(({ truck, activity }) => `
+  container.innerHTML = items
+    .map(({ truck, activity }) => `
     <article class="bg-white rounded-xl shadow-soft p-4 flex flex-col gap-2">
       <div class="text-xs text-gray-500">${fmtDate(activity.date)} • ${activity.type}</div>
       <h4 class="font-semibold">${activity.id} – ${truck.id}</h4>
@@ -27,7 +36,8 @@ export function renderActivity() {
         <span class="text-xs px-2 py-1 rounded-full ${activity.status === 'Open' ? 'bg-red-100 text-motrac-red' : 'bg-green-100 text-green-700'}">${activity.status}</span>
         <button class="text-sm underline" data-open-detail="${truck.id}">Naar truck</button>
       </div>
-    </article>`).join('');
+    </article>`)
+    .join('');
 
-  $('#activityEmpty').classList.toggle('hidden', items.length !== 0);
+  $('#activityEmpty')?.classList.toggle('hidden', items.length !== 0);
 }
