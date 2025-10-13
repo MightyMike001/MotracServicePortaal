@@ -76,11 +76,11 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
 
   listEl.innerHTML = pendingRequests
     .map(request => {
-      const defaultRole = ROLE_OPTIONS.includes(request.requestedRole) ? request.requestedRole : 'Gebruiker';
-      const requestedInfo =
-        request.requestedRole && request.requestedRole !== defaultRole
-          ? `${request.requestedRole}`
-          : defaultRole;
+      const hasRequestedRole = ROLE_OPTIONS.includes(request.requestedRole);
+      const defaultRole = hasRequestedRole ? request.requestedRole : 'Gebruiker';
+      const requestedInfo = hasRequestedRole
+        ? `Voorkeursrol: ${request.requestedRole}`
+        : 'Nog geen rol toegewezen';
       const note = request.requestNotes ? `<p class="text-xs text-gray-500">${request.requestNotes}</p>` : '';
       const contactDetails = [request.email, request.phone].filter(Boolean).join(' • ');
 
@@ -103,7 +103,7 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
               <p>${formatDateTime(request.submittedAt)}</p>
             </div>
             <div>
-              <p class="text-xs uppercase text-gray-500 tracking-wide">Gewenste omgeving</p>
+              <p class="text-xs uppercase text-gray-500 tracking-wide">Rolstatus</p>
               <p>${requestedInfo}</p>
             </div>
           </div>

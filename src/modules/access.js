@@ -12,7 +12,11 @@ function getAllowedFleetIds() {
 export function canViewFleetAsset(truck) {
   if (!truck) return false;
   const role = getRole();
-  if (!role || role === 'Beheerder' || role === 'Gebruiker') {
+  if (!role) {
+    return false;
+  }
+
+  if (role === 'Beheerder' || role === 'Gebruiker') {
     return true;
   }
 

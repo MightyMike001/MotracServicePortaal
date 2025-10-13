@@ -25,9 +25,14 @@ function getFleetSummaryById(fleetId) {
 }
 
 function switchMainTab(tab) {
-  const allowedTabs = Array.isArray(state.allowedTabs) && state.allowedTabs.length
-    ? state.allowedTabs
-    : ['vloot', 'activiteit', 'users'];
+  const allowedTabs = Array.isArray(state.allowedTabs) ? state.allowedTabs : ['vloot', 'activiteit', 'users'];
+
+  if (!allowedTabs.length) {
+    state.activeTab = null;
+    setMainTab(null);
+    return;
+  }
+
   const fallback = allowedTabs[0] || 'vloot';
   const targetTab = allowedTabs.includes(tab) ? tab : fallback;
   state.activeTab = targetTab;
@@ -520,7 +525,6 @@ function handleAccountRequestSubmit(event) {
   const organisation = $('#requestOrganisation')?.value.trim();
   const email = $('#requestEmail')?.value.trim();
   const phone = $('#requestPhone')?.value.trim();
-  const requestedRole = $('#requestRole')?.value || 'Gebruiker';
   const requestNotes = $('#requestNotes')?.value.trim();
 
   if (!name || !organisation || !email) {
@@ -534,7 +538,7 @@ function handleAccountRequestSubmit(event) {
     organisation,
     email,
     phone,
-    requestedRole,
+    requestedRole: null,
     requestNotes,
     status: 'pending',
     submittedAt: new Date().toISOString()
@@ -549,7 +553,7 @@ function handleAccountRequestSubmit(event) {
 
   closeModals();
   renderAccountRequests();
-  showToast('Uw aanvraag is ontvangen. Een beheerder koppelt deze zo snel mogelijk.');
+  showToast('Uw aanvraag is ontvangen. Een beheerder kent binnenkort de juiste rechten toe.');
 }
 
 function handleAccountRequestAction(button) {
@@ -764,7 +768,7 @@ async function loadInitialData(profile) {
   }
 
   const role = profile?.role ?? null;
-  const unrestricted = !role || role === 'Beheerder' || role === 'Gebruiker';
+  const unrestricted = role === 'Beheerder' || role === 'Gebruiker';
   let accessibleFleetIds = unrestricted ? null : new Set();
 
   if (membershipsResult.status === 'fulfilled') {
