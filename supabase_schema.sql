@@ -345,7 +345,16 @@ drop policy if exists "Authenticated write profiles" on public.motrac_service_po
 create policy "Portal read profiles"
   on public.motrac_service_portaal_profiles
   for select
-  using (auth.role() in ('authenticated', 'service_role'));
+  using (
+    auth.role() = 'service_role'
+    or auth.uid() = auth_user_id
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles requester
+      where requester.auth_user_id = auth.uid()
+        and requester.role in ('Beheerder', 'Gebruiker')
+    )
+  );
 create policy "Users manage own profile"
   on public.motrac_service_portaal_profiles
   for update
@@ -362,7 +371,15 @@ drop policy if exists "Authenticated write profile memberships" on public.motrac
 create policy "Portal read profile memberships"
   on public.motrac_service_portaal_location_memberships
   for select
-  using (auth.role() in ('authenticated', 'service_role'));
+  using (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      where profile.id = public.motrac_service_portaal_location_memberships.profile_id
+        and profile.auth_user_id = auth.uid()
+    )
+  );
 create policy "Service role manage profile memberships"
   on public.motrac_service_portaal_location_memberships
   for all
