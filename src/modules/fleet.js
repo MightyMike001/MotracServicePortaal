@@ -45,21 +45,21 @@ export function renderFleet() {
     const openCount = truck.activity.filter(activity => activity.status === 'Open').length;
     return `
       <tr class="border-b hover:bg-gray-50">
-        <td class="py-3 px-3">
+        <td class="py-3 px-3" data-label="Serienummer / Referentie">
           <button class="text-left text-gray-900 hover:underline" data-open-detail="${truck.id}">
             <div class="font-medium">${truck.id}</div>
             <div class="text-xs text-gray-500">${truck.ref}</div>
           </button>
         </td>
-        <td class="py-3 px-3">${truck.fleetName || '—'}</td>
-        <td class="py-3 px-3">${truck.model}</td>
-        <td class="py-3 px-3">${truck.bmwStatus}</td>
-        <td class="py-3 px-3">${fmtDate(truck.bmwExpiry)}</td>
-        <td class="py-3 px-3">${formatOdoHtml(truck.odo, truck.odoDate)}</td>
-        <td class="py-3 px-3">
+        <td class="py-3 px-3" data-label="Vloot">${truck.fleetName || '—'}</td>
+        <td class="py-3 px-3" data-label="Model">${truck.model}</td>
+        <td class="py-3 px-3" data-label="BMWT‑status">${truck.bmwStatus}</td>
+        <td class="py-3 px-3" data-label="BMWT‑vervaldatum">${fmtDate(truck.bmwExpiry)}</td>
+        <td class="py-3 px-3" data-label="Tellerstand (datum)">${formatOdoHtml(truck.odo, truck.odoDate)}</td>
+        <td class="py-3 px-3" data-label="Activiteit">
           <button class="inline-flex items-center justify-center w-7 h-7 bg-red-100 text-motrac-red rounded-full font-semibold" title="Open meldingen" data-open-detail="${truck.id}">${openCount}</button>
         </td>
-        <td class="py-3 px-3 text-right">
+        <td class="py-3 px-3 sm:text-right" data-label="Acties">
           <div class="relative inline-block kebab">
             <button class="px-2 py-1 border rounded-lg">⋮</button>
             <div class="kebab-menu hidden absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft z-10">
@@ -74,5 +74,6 @@ export function renderFleet() {
       </tr>`;
   }).join('');
 
-  $('#fleetTbody').innerHTML = rows || '<tr><td colspan="8" class="py-6 text-center text-gray-500">Geen resultaten</td></tr>';
+  $('#fleetTbody').innerHTML =
+    rows || '<tr><td colspan="8" class="py-6 px-3 text-center text-gray-500">Geen resultaten</td></tr>';
 }

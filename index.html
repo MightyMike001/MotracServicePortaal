@@ -108,8 +108,8 @@
   <div id="app" class="min-h-screen hidden">
     <!-- Top Navigation -->
     <header class="bg-white shadow-soft">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
-        <div class="flex items-center gap-3">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <div class="flex items-center gap-3 order-1 sm:order-1">
           <div class="w-9 h-9 bg-motrac-red rounded-lg flex items-center justify-center">
             <svg
               class="w-6 h-6 text-white"
@@ -134,16 +134,48 @@
             <p class="text-xs text-gray-500">Prototype • geen echte data</p>
           </div>
         </div>
-        <nav class="ml-6 flex-1">
-          <ul class="flex items-center gap-6 text-sm font-medium" id="mainTabs">
-            <li><button data-tab="vloot" class="tab-active py-2">Vloot</button></li>
-            <li><button data-tab="activiteit" class="py-2">Activiteit</button></li>
-            <li><button data-tab="users" class="py-2">Gebruikersbeheer</button></li>
+        <nav
+          id="mainNav"
+          class="order-3 hidden w-full border-t border-gray-100 pt-3 sm:order-2 sm:border-0 sm:pt-0 sm:flex sm:flex-1 sm:items-center sm:gap-6"
+        >
+          <ul class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm font-medium w-full sm:w-auto" id="mainTabs">
+            <li class="w-full sm:w-auto">
+              <button data-tab="vloot" class="tab-active w-full text-left sm:w-auto sm:text-center py-2 px-3">Vloot</button>
+            </li>
+            <li class="w-full sm:w-auto">
+              <button data-tab="activiteit" class="w-full text-left sm:w-auto sm:text-center py-2 px-3">Activiteit</button>
+            </li>
+            <li class="w-full sm:w-auto">
+              <button data-tab="users" class="w-full text-left sm:w-auto sm:text-center py-2 px-3">Gebruikersbeheer</button>
+            </li>
           </ul>
         </nav>
-        <div class="flex items-center gap-2">
-          <button id="btnNewTicket" class="hidden sm:inline-flex items-center gap-2 bg-motrac-red text-white px-4 py-2 rounded-lg hover:opacity-95 shadow-soft">
+        <div class="flex flex-wrap items-center gap-2 ml-auto order-2 sm:order-3 sm:ml-0 sm:justify-end">
+          <button
+            id="btnNewTicketMobile"
+            class="sm:hidden inline-flex items-center gap-2 bg-motrac-red text-white px-3 py-2 rounded-lg shadow-soft"
+            type="button"
+          >
+            <span>Servicemelding</span>
+          </button>
+          <button
+            id="btnNewTicket"
+            class="hidden sm:inline-flex items-center gap-2 bg-motrac-red text-white px-4 py-2 rounded-lg hover:opacity-95 shadow-soft"
+            type="button"
+          >
             <span>Servicemelding maken</span>
+          </button>
+          <button
+            id="mobileMenuToggle"
+            class="sm:hidden inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm"
+            type="button"
+            aria-expanded="false"
+            aria-controls="mainNav"
+          >
+            <span>Menu</span>
+            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <path d="M3 6h14M3 10h14M3 14h14" stroke-linecap="round" />
+            </svg>
           </button>
           <div class="relative">
             <button id="userBtn" class="flex items-center gap-3 px-3 py-2 bg-gray-100 rounded-lg">
@@ -207,7 +239,7 @@
         </div>
 
         <!-- Table -->
-        <div class="bg-white rounded-xl shadow-soft p-2 overflow-auto">
+        <div class="bg-white rounded-xl shadow-soft p-2 overflow-auto responsive-table">
           <table class="min-w-full text-sm">
             <thead>
               <tr class="text-left text-gray-600 border-b">
@@ -282,7 +314,7 @@
             <div id="accountRequestsHistory" class="mt-2 space-y-2 text-sm text-gray-600"></div>
           </div>
         </div>
-        <div class="bg-white rounded-xl shadow-soft p-2 overflow-auto">
+        <div class="bg-white rounded-xl shadow-soft p-2 overflow-auto responsive-table">
           <table class="min-w-full text-sm">
             <thead>
               <tr class="text-left text-gray-600 border-b">
@@ -305,7 +337,7 @@
 
       <!-- DETAIL: TRUCK -->
       <section id="truckDetail" class="hidden space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <button id="backToFleet" class="px-3 py-2 border rounded-lg">← Terug naar overzicht</button>
             <h2 id="detailTitle" class="text-lg font-semibold"></h2>
@@ -315,6 +347,11 @@
             <button class="px-3 py-2 border rounded-lg" data-action="updateOdo">Tellerstand doorgeven</button>
             <button class="px-3 py-2 border rounded-lg" data-action="editRef">Uw referentie wijzigen</button>
           </div>
+        </div>
+        <div class="grid grid-cols-1 sm:hidden gap-2">
+          <button class="px-3 py-2 border rounded-lg text-sm" data-action="newTicketFromDetail">Melding aanmaken</button>
+          <button class="px-3 py-2 border rounded-lg text-sm" data-action="updateOdo">Tellerstand doorgeven</button>
+          <button class="px-3 py-2 border rounded-lg text-sm" data-action="editRef">Uw referentie wijzigen</button>
         </div>
 
         <div class="bg-white rounded-xl shadow-soft p-0">
@@ -332,7 +369,7 @@
   <!-- MODALS -->
   <!-- Servicemelding algemeen -->
   <div id="modalTicket" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
-    <div class="bg-white w-full max-w-2xl rounded-xl shadow-soft p-6">
+    <div class="bg-white w-full max-w-2xl rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Servicemelding maken</h3>
         <button data-close class="text-gray-500">✕</button>
@@ -373,7 +410,7 @@
 
   <!-- Tellerstand doorgeven -->
   <div id="modalOdo" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Tellerstand doorgeven</h3>
         <button data-close class="text-gray-500">✕</button>
@@ -392,7 +429,7 @@
 
   <!-- Referentie wijzigen -->
   <div id="modalRef" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Uw referentie wijzigen</h3>
         <button data-close class="text-gray-500">✕</button>
@@ -411,7 +448,7 @@
 
   <!-- Verwijderen uit lijst (inactief) -->
   <div id="modalInactive" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Verwijderen uit lijst</h3>
         <button data-close class="text-gray-500">✕</button>
@@ -436,7 +473,7 @@
 
   <!-- Contract inzien -->
   <div id="modalContract" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
-    <div class="bg-white w-full max-w-xl rounded-xl shadow-soft p-6">
+    <div class="bg-white w-full max-w-xl rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Contract</h3>
         <button data-close class="text-gray-500">✕</button>
@@ -450,7 +487,7 @@
 
   <!-- Gebruiker toevoegen/bewerken -->
   <div id="modalUser" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 id="userModalTitle" class="text-lg font-semibold">Gebruiker toevoegen</h3>
         <button data-close class="text-gray-500">✕</button>
@@ -491,7 +528,7 @@
 
   <!-- Nieuw account aanvragen -->
   <div id="modalAccountRequest" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-xl shadow-soft p-6">
+    <div class="bg-white w-full max-w-lg rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">Nieuw account aanvragen</h3>
         <button data-close class="text-gray-500">✕</button>
