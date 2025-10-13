@@ -124,6 +124,44 @@ function normaliseActivity(activity = []) {
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
 
+function normaliseAccountRequest(entry) {
+  if (!entry) return null;
+
+  return {
+    id: entry.id,
+    name: entry.name ?? '—',
+    organisation: entry.organisation ?? '—',
+    email: entry.email ?? '',
+    phone: entry.phone ?? '',
+    requestNotes: entry.request_notes ?? '',
+    requestedRole: entry.requested_role ?? null,
+    status: entry.status ?? 'pending',
+    loginEnabled: entry.login_enabled ?? false,
+    passwordSetAt: entry.password_set_at ?? null,
+    authUserId: entry.auth_user_id ?? null,
+    assignedRole: entry.assigned_role ?? null,
+    assignedFleetId: entry.assigned_fleet_id ?? null,
+    assignedFleetName: entry.assigned_fleet_name ?? null,
+    assignedByProfileId: entry.assigned_by_profile_id ?? null,
+    completedAt: entry.completed_at ?? null,
+    submittedAt: entry.created_at ?? null,
+    updatedAt: entry.updated_at ?? null
+  };
+}
+
+async function fetchAccountRequestById(id) {
+  if (!id) return null;
+
+  const { data, error } = await supabase
+    .from('motrac_service_portaal_account_request_overview')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return normaliseAccountRequest(data);
+}
+
 export async function fetchLocations() {
   const { data, error } = await supabase
     .from('locations_with_all')
@@ -190,6 +228,16 @@ export async function fetchUsers() {
   }));
 }
 
+export async function fetchAccountRequests() {
+  const { data, error } = await supabase
+    .from('motrac_service_portaal_account_request_overview')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(normaliseAccountRequest).filter(Boolean);
+}
+
 export async function fetchProfileByAuthUserId(authUserId) {
   if (!authUserId) return null;
 
@@ -224,4 +272,68 @@ export async function fetchFleetMemberships(profileId) {
     fleetId: item.customer_fleet_id ?? null,
     fleetName: item.customer_fleet_name ?? '—'
   }));
+}
+
+export async function createAccountRequest({ name, organisation, email, phone, requestNotes }) {
+  const payload = {
+    name: name?.trim(),
+    organisation: organisation?.trim(),
+    email: email?.trim()?.toLowerCase(),
+    phone: phone?.trim() || null,
+    request_notes: requestNotes?.trim() || null
+  };
+
+  const { data, error } = await supabase
+    .from('motrac_service_portaal_account_requests')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return fetchAccountRequestById(data?.id);
+}
+
+export async function approveAccountRequest({ id, assignedRole, assignedFleetId, assignedByProfileId }) {
+  if (!id) throw new Error('Accountaanvraag-ID ontbreekt.');
+
+  const payload = {
+    status: 'approved',
+    assigned_role: assignedRole || null,
+    assigned_fleet_id: assignedFleetId || null,
+    assigned_by_profile_id: assignedByProfileId || null,
+    completed_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase
+    .from('motrac_service_portaal_account_requests')
+    .update(payload)
+    .eq('id', id)
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return fetchAccountRequestById(data?.id);
+}
+
+export async function rejectAccountRequest({ id, assignedByProfileId }) {
+  if (!id) throw new Error('Accountaanvraag-ID ontbreekt.');
+
+  const payload = {
+    status: 'rejected',
+    assigned_role: null,
+    assigned_fleet_id: null,
+    assigned_by_profile_id: assignedByProfileId || null,
+    login_enabled: false,
+    completed_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase
+    .from('motrac_service_portaal_account_requests')
+    .update(payload)
+    .eq('id', id)
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return fetchAccountRequestById(data?.id);
 }

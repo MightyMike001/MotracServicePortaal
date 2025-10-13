@@ -2,14 +2,16 @@ const ROLE_TO_ENVIRONMENT = {
   Beheerder: 'beheerder',
   Gebruiker: 'gebruiker',
   Klant: 'klant',
-  Vlootbeheerder: 'vlootbeheerder'
+  Vlootbeheerder: 'vlootbeheerder',
+  Gast: 'pending'
 };
 
 export const ENVIRONMENTS = {
   pending: {
     key: 'pending',
-    label: 'Nog geen rol',
-    summary: 'Uw account is aangemaakt. Een beheerder kent binnenkort de juiste rechten toe.',
+    label: 'Account in aanvraag',
+    summary:
+      'Uw account is actief en u kunt inloggen met uw eigen wachtwoord. Alle inhoud blijft verborgen totdat een beheerder uw rol heeft toegewezen en het account heeft goedgekeurd.',
     allowedTabs: []
   },
   beheerder: {
@@ -40,7 +42,7 @@ export const ENVIRONMENTS = {
 
 export function getEnvironmentKeyForRole(role) {
   if (!role) return 'pending';
-  return ROLE_TO_ENVIRONMENT[role] || 'gebruiker';
+  return ROLE_TO_ENVIRONMENT[role] || 'pending';
 }
 
 export function resolveEnvironment(input) {

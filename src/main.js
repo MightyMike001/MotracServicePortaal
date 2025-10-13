@@ -78,6 +78,10 @@ import {
   fetchUsers,
   fetchProfileByAuthUserId,
   fetchFleetMemberships,
+  fetchAccountRequests,
+  createAccountRequest,
+  approveAccountRequest,
+  rejectAccountRequest,
   getCurrentSession,
   onAuthStateChange,
   signInWithPassword,
@@ -518,7 +522,7 @@ async function handleLoginSubmit(event) {
   }
 }
 
-function handleAccountRequestSubmit(event) {
+async function handleAccountRequestSubmit(event) {
   event.preventDefault();
 
   const name = $('#requestName')?.value.trim();
@@ -532,31 +536,46 @@ function handleAccountRequestSubmit(event) {
     return;
   }
 
-  const newRequest = {
-    id: `R${Date.now()}`,
-    name,
-    organisation,
-    email,
-    phone,
-    requestedRole: null,
-    requestNotes,
-    status: 'pending',
-    submittedAt: new Date().toISOString()
-  };
-
-  state.accountRequests.unshift(newRequest);
-
   const form = event.target;
-  if (typeof form.reset === 'function') {
-    form.reset();
+  const submitButton = form.querySelector('[type="submit"]');
+  if (submitButton) {
+    submitButton.disabled = true;
   }
 
-  closeModals();
-  renderAccountRequests();
-  showToast('Uw aanvraag is ontvangen. Een beheerder kent binnenkort de juiste rechten toe.');
+  try {
+    const createdRequest = await createAccountRequest({
+      name,
+      organisation,
+      email,
+      phone,
+      requestNotes
+    });
+
+    if (typeof form.reset === 'function') {
+      form.reset();
+    }
+
+    closeModals();
+
+    if (Array.isArray(state.accountRequests) && state.allowedTabs?.includes('users') && createdRequest) {
+      state.accountRequests.unshift(createdRequest);
+      renderAccountRequests();
+    }
+
+    showToast(
+      'Uw aanvraag is ontvangen. U kunt direct een wachtwoord instellen en inloggen; alle inhoud blijft verborgen totdat een beheerder uw rol heeft toegewezen en het account heeft goedgekeurd.'
+    );
+  } catch (error) {
+    console.error('Accountaanvraag versturen mislukt', error);
+    showToast('Het versturen van de accountaanvraag is mislukt. Probeer het opnieuw.');
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+    }
+  }
 }
 
-function handleAccountRequestAction(button) {
+async function handleAccountRequestAction(button) {
   const action = button.dataset.requestAction;
   const requestId = button.dataset.id;
   if (!action || !requestId) return;
@@ -567,14 +586,31 @@ function handleAccountRequestAction(button) {
   const container = button.closest('[data-request]');
   if (!container) return;
 
+  const toggleButtonsDisabled = disabled => {
+    container.querySelectorAll('[data-request-action]').forEach(actionButton => {
+      actionButton.disabled = disabled;
+    });
+  };
+
   if (action === 'reject') {
-    request.status = 'rejected';
-    request.assignedRole = null;
-    request.assignedFleetId = null;
-    request.assignedFleetName = null;
-    request.completedAt = new Date().toISOString();
-    renderAccountRequests();
-    showToast(`Aanvraag van ${request.name} geweigerd.`);
+    toggleButtonsDisabled(true);
+    try {
+      const updatedRequest = await rejectAccountRequest({
+        id: requestId,
+        assignedByProfileId: state.profile?.id || null
+      });
+
+      if (updatedRequest) {
+        Object.assign(request, updatedRequest);
+        renderAccountRequests();
+        showToast(`Aanvraag van ${request.name} geweigerd.`);
+      }
+    } catch (error) {
+      console.error('Accountaanvraag weigeren mislukt', error);
+      showToast('Aanvraag kon niet worden geweigerd. Probeer het opnieuw.');
+    } finally {
+      toggleButtonsDisabled(false);
+    }
     return;
   }
 
@@ -588,25 +624,39 @@ function handleAccountRequestAction(button) {
   const selectedFleetId = fleetSelect?.value || '';
   const fleetSummary = getFleetSummaryById(selectedFleetId);
   const newUserLocation = fleetSummary?.locations?.[0] || request.organisation || '—';
-  const assignedFleetName = fleetSummary?.name || (selectedFleetId ? '—' : request.organisation || '—');
 
-  USERS.push({
-    id: `U${Math.floor(Math.random() * 10000)}`,
-    name: request.name,
-    email: request.email,
-    phone: request.phone || '',
-    location: newUserLocation,
-    role: selectedRole
-  });
+  toggleButtonsDisabled(true);
 
-  request.status = 'approved';
-  request.assignedRole = selectedRole;
-  request.assignedFleetId = selectedFleetId || null;
-  request.assignedFleetName = assignedFleetName;
-  request.completedAt = new Date().toISOString();
+  try {
+    const updatedRequest = await approveAccountRequest({
+      id: requestId,
+      assignedRole: selectedRole,
+      assignedFleetId: selectedFleetId || null,
+      assignedByProfileId: state.profile?.id || null
+    });
 
-  renderUsers();
-  showToast(`Account toegekend aan ${request.name}.`);
+    if (updatedRequest) {
+      Object.assign(request, updatedRequest);
+
+      USERS.push({
+        id: `U${Math.floor(Math.random() * 10000)}`,
+        name: request.name,
+        email: request.email,
+        phone: request.phone || '',
+        location: newUserLocation,
+        role: selectedRole
+      });
+
+      renderUsers();
+      renderAccountRequests();
+      showToast(`Account toegekend aan ${request.name}.`);
+    }
+  } catch (error) {
+    console.error('Accountaanvraag toekennen mislukt', error);
+    showToast('Account kon niet worden toegekend. Probeer het opnieuw.');
+  } finally {
+    toggleButtonsDisabled(false);
+  }
 }
 
 async function handleAuthenticatedSession(session, { forceReload = false } = {}) {
@@ -630,9 +680,10 @@ async function handleAuthenticatedSession(session, { forceReload = false } = {})
     state.usersPage = 1;
     state.usersPageSize = 10;
     state.editUserId = null;
-    state.allowedTabs = ['vloot', 'activiteit', 'users'];
-    state.activeEnvironmentKey = 'beheerder';
-    state.activeTab = 'vloot';
+    state.allowedTabs = [];
+    state.activeEnvironmentKey = 'pending';
+    state.activeTab = null;
+    setMainTab(null);
     $('#currentUserName').textContent = 'Niet ingelogd';
     const userMenuName = $('#userMenuName');
     if (userMenuName) {
@@ -736,12 +787,16 @@ async function initializeAuth() {
 }
 
 async function loadInitialData(profile) {
+  const role = profile?.role ?? null;
   const membershipsPromise = profile?.id ? fetchFleetMemberships(profile.id) : Promise.resolve([]);
-  const [locationsResult, fleetResult, usersResult, membershipsResult] = await Promise.allSettled([
+  const shouldFetchAccountRequests = role === 'Beheerder';
+  const accountRequestsPromise = shouldFetchAccountRequests ? fetchAccountRequests() : Promise.resolve([]);
+  const [locationsResult, fleetResult, usersResult, membershipsResult, accountRequestsResult] = await Promise.allSettled([
     fetchLocations(),
     fetchFleet(),
     fetchUsers(),
-    membershipsPromise
+    membershipsPromise,
+    accountRequestsPromise
   ]);
 
   let hadError = false;
@@ -767,7 +822,6 @@ async function loadInitialData(profile) {
     hadError = true;
   }
 
-  const role = profile?.role ?? null;
   const unrestricted = role === 'Beheerder' || role === 'Gebruiker';
   let accessibleFleetIds = unrestricted ? null : new Set();
 
@@ -785,6 +839,16 @@ async function loadInitialData(profile) {
   }
 
   state.accessibleFleetIds = unrestricted ? null : accessibleFleetIds;
+
+  if (accountRequestsResult.status === 'fulfilled') {
+    state.accountRequests = Array.isArray(accountRequestsResult.value) ? accountRequestsResult.value : [];
+  } else {
+    state.accountRequests = [];
+    if (shouldFetchAccountRequests) {
+      console.error('Kon accountaanvragen niet laden vanuit Supabase.', accountRequestsResult.reason);
+      hadError = true;
+    }
+  }
 
   if (hadError) {
     showToast('Live data niet beschikbaar – voorbeelddata worden gebruikt.');
