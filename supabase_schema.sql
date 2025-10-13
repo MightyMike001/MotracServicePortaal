@@ -228,6 +228,8 @@ alter table public.motrac_service_portaal_fleet_memberships enable row level sec
 -- Toegangsbeleid ------------------------------------------------------------
 drop policy if exists "Public select on locations" on public.locations;
 drop policy if exists "Authenticated write locations" on public.locations;
+drop policy if exists "Portal read locations" on public.locations;
+drop policy if exists "Service role manage locations" on public.locations;
 create policy "Portal read locations"
   on public.locations
   for select
@@ -268,6 +270,7 @@ create policy "Service role manage customer fleets"
   with check (auth.role() = 'service_role');
 
 drop policy if exists "Portal read fleet assets" on public.fleet_assets;
+drop policy if exists "Service role manage fleet assets" on public.fleet_assets;
 create policy "Portal read fleet assets"
   on public.fleet_assets
   for select
@@ -292,6 +295,8 @@ create policy "Service role manage fleet assets"
 
 drop policy if exists "Public select on fleet contracts" on public.fleet_contracts;
 drop policy if exists "Authenticated write fleet contracts" on public.fleet_contracts;
+drop policy if exists "Portal read fleet contracts" on public.fleet_contracts;
+drop policy if exists "Service role manage fleet contracts" on public.fleet_contracts;
 create policy "Portal read fleet contracts"
   on public.fleet_contracts
   for select
@@ -317,6 +322,8 @@ create policy "Service role manage fleet contracts"
 
 drop policy if exists "Public select on fleet activity" on public.fleet_activity;
 drop policy if exists "Authenticated write fleet activity" on public.fleet_activity;
+drop policy if exists "Portal read fleet activity" on public.fleet_activity;
+drop policy if exists "Service role manage fleet activity" on public.fleet_activity;
 create policy "Portal read fleet activity"
   on public.fleet_activity
   for select
@@ -342,6 +349,9 @@ create policy "Service role manage fleet activity"
 
 drop policy if exists "Public select on profiles" on public.motrac_service_portaal_profiles;
 drop policy if exists "Authenticated write profiles" on public.motrac_service_portaal_profiles;
+drop policy if exists "Portal read profiles" on public.motrac_service_portaal_profiles;
+drop policy if exists "Users manage own profile" on public.motrac_service_portaal_profiles;
+drop policy if exists "Service role manage profiles" on public.motrac_service_portaal_profiles;
 create policy "Portal read profiles"
   on public.motrac_service_portaal_profiles
   for select
@@ -368,6 +378,8 @@ create policy "Service role manage profiles"
 
 drop policy if exists "Public select on profile memberships" on public.motrac_service_portaal_location_memberships;
 drop policy if exists "Authenticated write profile memberships" on public.motrac_service_portaal_location_memberships;
+drop policy if exists "Portal read profile memberships" on public.motrac_service_portaal_location_memberships;
+drop policy if exists "Service role manage profile memberships" on public.motrac_service_portaal_location_memberships;
 create policy "Portal read profile memberships"
   on public.motrac_service_portaal_location_memberships
   for select
