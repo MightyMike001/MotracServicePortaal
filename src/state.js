@@ -6,6 +6,7 @@ export const state = {
   editUserId: null,
   session: null,
   profile: null,
+  accessibleFleetIds: null,
   hasLoadedInitialData: false,
   eventsWired: false
 };

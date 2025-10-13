@@ -1,5 +1,6 @@
 import { FLEET } from '../data.js';
 import { $, fmtDate } from '../utils.js';
+import { filterFleetByAccess } from './access.js';
 
 export function renderActivity() {
   const container = $('#activityList');
@@ -7,7 +8,7 @@ export function renderActivity() {
   const location = $('#activityLocationFilter').value;
   const items = [];
 
-  FLEET.forEach(truck => {
+  filterFleetByAccess(FLEET).forEach(truck => {
     if (!truck.active) return;
     if (location !== 'Alle locaties' && truck.location !== location) return;
     truck.activity.forEach(activity => {

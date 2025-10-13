@@ -23,6 +23,14 @@ begin
   if not exists (select 1 from pg_type where typname = 'motrac_service_portaal_role') then
     create type public.motrac_service_portaal_role as enum ('Beheerder', 'Gebruiker', 'Gast');
   end if;
+
+  if exists (select 1 from pg_type where typname = 'motrac_service_portaal_role') then
+    begin
+      alter type public.motrac_service_portaal_role add value if not exists 'Klant';
+    exception
+      when duplicate_object then null;
+    end;
+  end if;
 end;
 $$;
 
@@ -31,6 +39,14 @@ create table if not exists public.locations (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.customer_fleets (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  description text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
 );
 
 create table if not exists public.fleet_assets (
@@ -42,6 +58,7 @@ create table if not exists public.fleet_assets (
   odo integer,
   odo_date date,
   location_id uuid not null references public.locations(id) on delete restrict,
+  customer_fleet_id uuid references public.customer_fleets(id) on delete set null,
   active boolean not null default true,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
@@ -56,11 +73,20 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists update_customer_fleets_timestamp on public.customer_fleets;
+create trigger update_customer_fleets_timestamp
+before update on public.customer_fleets
+for each row
+execute function public.set_updated_at();
+
 drop trigger if exists update_fleet_assets_timestamp on public.fleet_assets;
 create trigger update_fleet_assets_timestamp
 before update on public.fleet_assets
 for each row
 execute function public.set_updated_at();
+
+alter table if exists public.fleet_assets
+  add column if not exists customer_fleet_id uuid references public.customer_fleets(id) on delete set null;
 
 create table if not exists public.fleet_contracts (
   id uuid primary key default gen_random_uuid(),
@@ -159,6 +185,20 @@ before update on public.motrac_service_portaal_location_memberships
 for each row
 execute function public.set_updated_at();
 
+create table if not exists public.motrac_service_portaal_fleet_memberships (
+  profile_id uuid references public.motrac_service_portaal_profiles(id) on delete cascade,
+  customer_fleet_id uuid references public.customer_fleets(id) on delete cascade,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  primary key (profile_id, customer_fleet_id)
+);
+
+drop trigger if exists update_motrac_fleet_memberships_timestamp on public.motrac_service_portaal_fleet_memberships;
+create trigger update_motrac_fleet_memberships_timestamp
+before update on public.motrac_service_portaal_fleet_memberships
+for each row
+execute function public.set_updated_at();
+
 create or replace function public.touch_portal_profile_last_sign_in()
 returns void
 language plpgsql
@@ -177,11 +217,13 @@ $$;
 
 -- Row Level Security --------------------------------------------------------
 alter table public.locations enable row level security;
+alter table public.customer_fleets enable row level security;
 alter table public.fleet_assets enable row level security;
 alter table public.fleet_contracts enable row level security;
 alter table public.fleet_activity enable row level security;
 alter table public.motrac_service_portaal_profiles enable row level security;
 alter table public.motrac_service_portaal_location_memberships enable row level security;
+alter table public.motrac_service_portaal_fleet_memberships enable row level security;
 
 -- Toegangsbeleid ------------------------------------------------------------
 drop policy if exists "Public select on locations" on public.locations;
@@ -198,10 +240,50 @@ create policy "Service role manage locations"
 
 drop policy if exists "Public select on fleet assets" on public.fleet_assets;
 drop policy if exists "Authenticated write fleet assets" on public.fleet_assets;
+drop policy if exists "Portal read customer fleets" on public.customer_fleets;
+drop policy if exists "Service role manage customer fleets" on public.customer_fleets;
+create policy "Portal read customer fleets"
+  on public.customer_fleets
+  for select
+  using (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      where profile.auth_user_id = auth.uid()
+        and profile.role in ('Beheerder', 'Gebruiker')
+    )
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      join public.motrac_service_portaal_fleet_memberships membership on membership.profile_id = profile.id
+      where profile.auth_user_id = auth.uid()
+        and membership.customer_fleet_id = customer_fleets.id
+    )
+  );
+create policy "Service role manage customer fleets"
+  on public.customer_fleets
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
+
+drop policy if exists "Portal read fleet assets" on public.fleet_assets;
 create policy "Portal read fleet assets"
   on public.fleet_assets
   for select
-  using (auth.role() in ('authenticated', 'service_role'));
+  using (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      left join public.motrac_service_portaal_fleet_memberships membership on membership.profile_id = profile.id
+      where profile.auth_user_id = auth.uid()
+        and (
+          profile.role in ('Beheerder', 'Gebruiker')
+          or (membership.customer_fleet_id is not null and membership.customer_fleet_id = public.fleet_assets.customer_fleet_id)
+        )
+    )
+  );
 create policy "Service role manage fleet assets"
   on public.fleet_assets
   for all
@@ -213,7 +295,20 @@ drop policy if exists "Authenticated write fleet contracts" on public.fleet_cont
 create policy "Portal read fleet contracts"
   on public.fleet_contracts
   for select
-  using (auth.role() in ('authenticated', 'service_role'));
+  using (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      left join public.motrac_service_portaal_fleet_memberships membership on membership.profile_id = profile.id
+      join public.fleet_assets asset on asset.id = public.fleet_contracts.fleet_id
+      where profile.auth_user_id = auth.uid()
+        and (
+          profile.role in ('Beheerder', 'Gebruiker')
+          or (membership.customer_fleet_id is not null and membership.customer_fleet_id = asset.customer_fleet_id)
+        )
+    )
+  );
 create policy "Service role manage fleet contracts"
   on public.fleet_contracts
   for all
@@ -225,7 +320,20 @@ drop policy if exists "Authenticated write fleet activity" on public.fleet_activ
 create policy "Portal read fleet activity"
   on public.fleet_activity
   for select
-  using (auth.role() in ('authenticated', 'service_role'));
+  using (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      left join public.motrac_service_portaal_fleet_memberships membership on membership.profile_id = profile.id
+      join public.fleet_assets asset on asset.id = public.fleet_activity.fleet_id
+      where profile.auth_user_id = auth.uid()
+        and (
+          profile.role in ('Beheerder', 'Gebruiker')
+          or (membership.customer_fleet_id is not null and membership.customer_fleet_id = asset.customer_fleet_id)
+        )
+    )
+  );
 create policy "Service role manage fleet activity"
   on public.fleet_activity
   for all
@@ -261,6 +369,29 @@ create policy "Service role manage profile memberships"
   using (auth.role() = 'service_role')
   with check (auth.role() = 'service_role');
 
+drop policy if exists "Portal read fleet memberships" on public.motrac_service_portaal_fleet_memberships;
+drop policy if exists "Service role manage fleet memberships" on public.motrac_service_portaal_fleet_memberships;
+create policy "Portal read fleet memberships"
+  on public.motrac_service_portaal_fleet_memberships
+  for select
+  using (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      where profile.auth_user_id = auth.uid()
+        and (
+          profile.role in ('Beheerder', 'Gebruiker')
+          or profile.id = public.motrac_service_portaal_fleet_memberships.profile_id
+        )
+    )
+  );
+create policy "Service role manage fleet memberships"
+  on public.motrac_service_portaal_fleet_memberships
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
+
 -- Views --------------------------------------------------------------------
 create or replace view public.motrac_service_portaal_user_directory as
 select
@@ -292,10 +423,13 @@ select
   asset.odo,
   asset.odo_date,
   asset.active,
+  asset.customer_fleet_id,
+  fleet.name as customer_fleet_name,
   loc.name as location_name,
   coalesce(contract_data.contract, '{}'::jsonb) as contract,
   coalesce(activity_data.activity, '[]'::jsonb) as activity
 from public.fleet_assets asset
+left join public.customer_fleets fleet on fleet.id = asset.customer_fleet_id
 left join public.locations loc on loc.id = asset.location_id
 left join lateral (
   select to_jsonb(fc.*) - 'id' - 'fleet_id' - 'created_at' as contract
@@ -316,6 +450,14 @@ left join lateral (
   from public.fleet_activity fa
   where fa.fleet_id = asset.id
 ) activity_data on true;
+
+create or replace view public.motrac_service_portaal_profile_fleet_memberships as
+select
+  membership.profile_id,
+  membership.customer_fleet_id,
+  coalesce(fleet.name, 'Onbekende vloot') as customer_fleet_name
+from public.motrac_service_portaal_fleet_memberships membership
+left join public.customer_fleets fleet on fleet.id = membership.customer_fleet_id;
 
 -- Seeds (optioneel) --------------------------------------------------------
 -- insert into public.locations (name) values

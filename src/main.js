@@ -5,12 +5,14 @@ import { populateLocationFilters, renderFleet } from './modules/fleet.js';
 import { renderActivity } from './modules/activity.js';
 import { renderUsers } from './modules/users.js';
 import { openDetail, setDetailTab } from './modules/detail.js';
+import { canViewFleetAsset } from './modules/access.js';
 import { setMainTab } from './modules/navigation.js';
 import {
   fetchFleet,
   fetchLocations,
   fetchUsers,
   fetchProfileByAuthUserId,
+  fetchFleetMemberships,
   getCurrentSession,
   onAuthStateChange,
   signInWithPassword,
@@ -104,7 +106,7 @@ function wireEvents() {
     const action = actionButton.dataset.action;
     const id = actionButton.dataset.id || state.selectedTruckId;
     const truck = FLEET.find(item => item.id === id);
-    if (!truck) return;
+    if (!truck || !canViewFleetAsset(truck)) return;
 
     if (action === 'newTicket' || action === 'newTicketFromDetail') {
       $('#ticketTruck').value = truck.id;
@@ -165,6 +167,10 @@ function wireEvents() {
     }
 
     const truck = FLEET.find(item => item.id === id);
+    if (!truck || !canViewFleetAsset(truck)) {
+      showToast('U heeft geen toegang tot dit object.');
+      return;
+    }
     truck.activity.push({
       id: `M-${Math.floor(1000 + Math.random() * 9000)}`,
       type,
@@ -187,6 +193,10 @@ function wireEvents() {
   $('#odoSave').addEventListener('click', event => {
     const id = event.target.dataset.id;
     const truck = FLEET.find(item => item.id === id);
+    if (!truck || !canViewFleetAsset(truck)) {
+      showToast('U heeft geen toegang tot dit object.');
+      return;
+    }
     const value = parseInt($('#odoNew').value, 10);
     const currentOdo = typeof truck.odo === 'number' && Number.isFinite(truck.odo) ? truck.odo : null;
     if (Number.isNaN(value) || value < 0 || (currentOdo !== null && value < currentOdo)) {
@@ -204,6 +214,10 @@ function wireEvents() {
   $('#refSave').addEventListener('click', event => {
     const id = event.target.dataset.id;
     const truck = FLEET.find(item => item.id === id);
+    if (!truck || !canViewFleetAsset(truck)) {
+      showToast('U heeft geen toegang tot dit object.');
+      return;
+    }
     const value = $('#refNew').value.trim();
     if (!value) {
       showToast('Referentie mag niet leeg zijn.');
@@ -225,6 +239,10 @@ function wireEvents() {
       return;
     }
     const truck = FLEET.find(item => item.id === id);
+    if (!truck || !canViewFleetAsset(truck)) {
+      showToast('U heeft geen toegang tot dit object.');
+      return;
+    }
     truck.active = false;
     closeModals();
     renderFleet();
@@ -424,6 +442,7 @@ async function handleAuthenticatedSession(session, { forceReload = false } = {})
   if (!session) {
     state.profile = null;
     state.hasLoadedInitialData = false;
+    state.accessibleFleetIds = null;
     resetToDefaults();
     state.fleetFilter.location = 'Alle locaties';
     state.fleetFilter.query = '';
@@ -470,7 +489,7 @@ async function handleAuthenticatedSession(session, { forceReload = false } = {})
   const shouldReloadData = forceReload || !state.hasLoadedInitialData;
   if (shouldReloadData) {
     try {
-      await loadInitialData();
+      await loadInitialData(profile);
     } catch (error) {
       console.error('Kon data niet laden', error);
       setLoginError('Er ging iets mis bij het laden van de gegevens. Probeer het later opnieuw.');
@@ -520,11 +539,13 @@ async function initializeAuth() {
   });
 }
 
-async function loadInitialData() {
-  const [locationsResult, fleetResult, usersResult] = await Promise.allSettled([
+async function loadInitialData(profile) {
+  const membershipsPromise = profile?.id ? fetchFleetMemberships(profile.id) : Promise.resolve([]);
+  const [locationsResult, fleetResult, usersResult, membershipsResult] = await Promise.allSettled([
     fetchLocations(),
     fetchFleet(),
-    fetchUsers()
+    fetchUsers(),
+    membershipsPromise
   ]);
 
   let hadError = false;
@@ -549,6 +570,25 @@ async function loadInitialData() {
     console.error('Kon gebruikers niet laden vanuit Supabase.', usersResult.reason);
     hadError = true;
   }
+
+  const role = profile?.role ?? null;
+  const unrestricted = !role || role === 'Beheerder' || role === 'Gebruiker';
+  let accessibleFleetIds = unrestricted ? null : new Set();
+
+  if (membershipsResult.status === 'fulfilled') {
+    const memberships = membershipsResult.value || [];
+    if (!unrestricted) {
+      memberships
+        .map(item => item?.fleetId)
+        .filter(Boolean)
+        .forEach(fleetId => accessibleFleetIds.add(fleetId));
+    }
+  } else {
+    console.error('Kon vloottoegang niet laden vanuit Supabase.', membershipsResult.reason);
+    hadError = true;
+  }
+
+  state.accessibleFleetIds = unrestricted ? null : accessibleFleetIds;
 
   if (hadError) {
     showToast('Live data niet beschikbaar – voorbeelddata worden gebruikt.');

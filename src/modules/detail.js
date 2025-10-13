@@ -1,11 +1,12 @@
 import { FLEET } from '../data.js';
 import { state } from '../state.js';
 import { $, $$, fmtDate, kv, formatOdoHtml } from '../utils.js';
+import { canViewFleetAsset } from './access.js';
 
 export function openDetail(id) {
   state.selectedTruckId = id;
   const truck = FLEET.find(item => item.id === id);
-  if (!truck) return;
+  if (!truck || !canViewFleetAsset(truck)) return;
 
   $('#detailTitle').textContent = `${truck.id} • ${truck.ref}`;
   setDetailTab('info');
@@ -22,13 +23,14 @@ export function setDetailTab(tab) {
   });
 
   const truck = FLEET.find(item => item.id === state.selectedTruckId);
-  if (!truck) return;
+  if (!truck || !canViewFleetAsset(truck)) return;
 
   if (tab === 'info') {
     $('#detailContent').innerHTML = `
       <div class="grid sm:grid-cols-2 gap-4 text-sm">
         ${infoRow('Objectnummer', truck.id, true)}
         ${infoRow('Referentie', truck.ref, false, 'editRefFromDetail')}
+        ${infoRow('Vloot', truck.fleetName || '—', true)}
         ${infoRow('Model', truck.model)}
         ${infoRow('Tellerstand (datum)', formatOdoHtml(truck.odo, truck.odoDate), false, 'updateOdoFromDetail')}
         ${infoRow('BMWT‑status', truck.bmwStatus)}

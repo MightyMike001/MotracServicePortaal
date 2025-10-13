@@ -157,6 +157,8 @@ export async function fetchFleet() {
 
   return (data || []).map(item => ({
     id: item.id,
+    fleetId: item.customer_fleet_id ?? null,
+    fleetName: item.customer_fleet_name ?? '—',
     ref: item.reference ?? '—',
     model: item.model ?? '—',
     bmwStatus: item.bmw_status ?? 'Onbekend',
@@ -206,4 +208,20 @@ export async function fetchProfileByAuthUserId(authUserId) {
 export async function touchProfileSignIn() {
   const { error } = await supabase.rpc('touch_portal_profile_last_sign_in');
   if (error) throw error;
+}
+
+export async function fetchFleetMemberships(profileId) {
+  if (!profileId) return [];
+
+  const { data, error } = await supabase
+    .from('motrac_service_portaal_profile_fleet_memberships')
+    .select('customer_fleet_id, customer_fleet_name')
+    .eq('profile_id', profileId);
+
+  if (error) throw error;
+
+  return (data || []).map(item => ({
+    fleetId: item.customer_fleet_id ?? null,
+    fleetName: item.customer_fleet_name ?? '—'
+  }));
 }
