@@ -51,11 +51,12 @@ function renderHistory(historyEl, resolvedRequests = []) {
           : 'Afgewezen';
       const fleetLabel =
         request.assignedFleetName || request.organisation || (request.assignedFleetId ? '—' : 'Geen specifieke vloot');
+      const passwordInfo = request.passwordSetAt ? ` • Wachtwoord sinds ${formatDateTime(request.passwordSetAt)}` : '';
       return `
         <div class="flex items-start justify-between gap-3 border border-gray-200 rounded-lg px-3 py-2">
           <div>
             <p class="font-medium text-gray-800">${request.name}</p>
-            <p class="text-xs text-gray-500">${statusLabel} • ${formatDateTime(request.completedAt)}</p>
+            <p class="text-xs text-gray-500">${statusLabel} • ${formatDateTime(request.completedAt)}${passwordInfo}</p>
           </div>
           <span class="text-xs text-gray-500">${fleetLabel}</span>
         </div>`;
@@ -83,6 +84,10 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
         : 'Nog geen rol toegewezen';
       const note = request.requestNotes ? `<p class="text-xs text-gray-500">${request.requestNotes}</p>` : '';
       const contactDetails = [request.email, request.phone].filter(Boolean).join(' • ');
+      const loginStatusLabel = request.loginEnabled ? 'Inloggen geactiveerd' : 'Inloggen geblokkeerd';
+      const passwordLabel = request.passwordSetAt
+        ? `Wachtwoord ingesteld op ${formatDateTime(request.passwordSetAt)}`
+        : 'Wachtwoord nog niet ingesteld';
 
       return `
         <article class="border border-gray-200 rounded-lg p-4 space-y-3" data-request data-id="${request.id}">
@@ -105,6 +110,14 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
             <div>
               <p class="text-xs uppercase text-gray-500 tracking-wide">Rolstatus</p>
               <p>${requestedInfo}</p>
+            </div>
+            <div>
+              <p class="text-xs uppercase text-gray-500 tracking-wide">Toegang</p>
+              <p>${loginStatusLabel}</p>
+            </div>
+            <div>
+              <p class="text-xs uppercase text-gray-500 tracking-wide">Wachtwoord</p>
+              <p>${passwordLabel}</p>
             </div>
           </div>
           <div class="grid sm:grid-cols-2 gap-3">
@@ -144,7 +157,7 @@ export function renderAccountRequests() {
   const summaryEl = $('#accountRequestsSummary');
   if (summaryEl) {
     summaryEl.textContent = pending.length
-      ? `${pending.length} aanvraag${pending.length > 1 ? 'en' : ''} wachten op toewijzing.`
+      ? `${pending.length} aanvraag${pending.length > 1 ? 'en' : ''} wachten op toewijzing. Aanvragers kunnen al inloggen maar zien nog geen inhoud.`
       : 'Geen open aanvragen.';
   }
 

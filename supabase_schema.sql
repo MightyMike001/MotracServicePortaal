@@ -31,6 +31,10 @@ begin
       when duplicate_object then null;
     end;
   end if;
+
+  if not exists (select 1 from pg_type where typname = 'account_request_status') then
+    create type public.account_request_status as enum ('pending', 'approved', 'rejected');
+  end if;
 end;
 $$;
 
@@ -119,7 +123,7 @@ create table if not exists public.motrac_service_portaal_profiles (
   display_name text not null,
   email text not null unique,
   phone text,
-  role public.motrac_service_portaal_role not null default 'Gebruiker',
+  role public.motrac_service_portaal_role not null default 'Gast',
   default_location_id uuid references public.locations(id) on delete set null,
   last_sign_in_at timestamptz,
   created_at timestamptz not null default timezone('utc', now()),
@@ -156,9 +160,46 @@ begin
     set display_name = excluded.display_name,
         email = excluded.email;
 
+  update public.motrac_service_portaal_account_requests request
+  set
+    auth_user_id = new.id,
+    login_enabled = true,
+    password_set_at = coalesce(request.password_set_at, timezone('utc', now())),
+    updated_at = timezone('utc', now())
+  where lower(request.email) = lower(resolved_email)
+    and request.auth_user_id is null;
+
   return new;
 end;
 $$;
+
+create table if not exists public.motrac_service_portaal_account_requests (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  organisation text not null,
+  email text not null,
+  phone text,
+  request_notes text,
+  requested_role public.motrac_service_portaal_role,
+  status public.account_request_status not null default 'pending',
+  login_enabled boolean not null default true,
+  password_set_at timestamptz,
+  auth_user_id uuid references auth.users(id) on delete set null,
+  assigned_role public.motrac_service_portaal_role,
+  assigned_fleet_id uuid references public.customer_fleets(id) on delete set null,
+  assigned_by_profile_id uuid references public.motrac_service_portaal_profiles(id) on delete set null,
+  completed_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists motrac_account_requests_email_idx on public.motrac_service_portaal_account_requests (lower(email));
+
+drop trigger if exists update_motrac_account_requests_timestamp on public.motrac_service_portaal_account_requests;
+create trigger update_motrac_account_requests_timestamp
+before update on public.motrac_service_portaal_account_requests
+for each row
+execute function public.set_updated_at();
 
 drop trigger if exists sync_motrac_profile_from_auth on auth.users;
 create trigger sync_motrac_profile_from_auth
@@ -224,6 +265,7 @@ alter table public.fleet_activity enable row level security;
 alter table public.motrac_service_portaal_profiles enable row level security;
 alter table public.motrac_service_portaal_location_memberships enable row level security;
 alter table public.motrac_service_portaal_fleet_memberships enable row level security;
+alter table public.motrac_service_portaal_account_requests enable row level security;
 
 -- Toegangsbeleid ------------------------------------------------------------
 drop policy if exists "Public select on locations" on public.locations;
@@ -421,6 +463,47 @@ create policy "Service role manage fleet memberships"
   using (auth.role() = 'service_role')
   with check (auth.role() = 'service_role');
 
+drop policy if exists "Public submit account requests" on public.motrac_service_portaal_account_requests;
+drop policy if exists "Portal read account requests" on public.motrac_service_portaal_account_requests;
+drop policy if exists "Portal manage account requests" on public.motrac_service_portaal_account_requests;
+create policy "Public submit account requests"
+  on public.motrac_service_portaal_account_requests
+  for insert
+  with check (true);
+create policy "Portal read account requests"
+  on public.motrac_service_portaal_account_requests
+  for select
+  using (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      where profile.auth_user_id = auth.uid()
+        and profile.role = 'Beheerder'
+    )
+  );
+create policy "Portal manage account requests"
+  on public.motrac_service_portaal_account_requests
+  for update
+  using (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      where profile.auth_user_id = auth.uid()
+        and profile.role = 'Beheerder'
+    )
+  )
+  with check (
+    auth.role() = 'service_role'
+    or exists (
+      select 1
+      from public.motrac_service_portaal_profiles profile
+      where profile.auth_user_id = auth.uid()
+        and profile.role = 'Beheerder'
+    )
+  );
+
 drop view if exists public.motrac_service_portaal_user_directory;
 create view public.motrac_service_portaal_user_directory as
 select
@@ -490,6 +573,30 @@ select
   coalesce(fleet.name, 'Onbekende vloot') as customer_fleet_name
 from public.motrac_service_portaal_fleet_memberships membership
 left join public.customer_fleets fleet on fleet.id = membership.customer_fleet_id;
+
+drop view if exists public.motrac_service_portaal_account_request_overview;
+create view public.motrac_service_portaal_account_request_overview as
+select
+  request.id,
+  request.name,
+  request.organisation,
+  request.email,
+  request.phone,
+  request.request_notes,
+  request.requested_role,
+  request.status,
+  request.login_enabled,
+  request.password_set_at,
+  request.auth_user_id,
+  request.assigned_role,
+  request.assigned_fleet_id,
+  request.assigned_by_profile_id,
+  request.completed_at,
+  request.created_at,
+  request.updated_at,
+  fleet.name as assigned_fleet_name
+from public.motrac_service_portaal_account_requests request
+left join public.customer_fleets fleet on fleet.id = request.assigned_fleet_id;
 
 -- Seeds (optioneel) --------------------------------------------------------
 -- insert into public.locations (name) values
