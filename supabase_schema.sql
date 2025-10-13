@@ -106,6 +106,40 @@ before update on public.motrac_service_portaal_profiles
 for each row
 execute function public.set_updated_at();
 
+create or replace function public.sync_motrac_profile_from_auth()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as
+$$
+declare
+  resolved_email text;
+  resolved_name text;
+begin
+  resolved_email := coalesce(new.email, new.raw_user_meta_data ->> 'email');
+  resolved_name := coalesce(new.raw_user_meta_data ->> 'full_name', resolved_email);
+
+  if resolved_email is null then
+    return new;
+  end if;
+
+  insert into public.motrac_service_portaal_profiles (auth_user_id, display_name, email)
+  values (new.id, coalesce(resolved_name, resolved_email), resolved_email)
+  on conflict (auth_user_id) do update
+    set display_name = excluded.display_name,
+        email = excluded.email;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_motrac_profile_from_auth on auth.users;
+create trigger sync_motrac_profile_from_auth
+after insert or update on auth.users
+for each row
+execute function public.sync_motrac_profile_from_auth();
+
 create table if not exists public.motrac_service_portaal_location_memberships (
   profile_id uuid references public.motrac_service_portaal_profiles(id) on delete cascade,
   location_id uuid references public.locations(id) on delete cascade,
@@ -125,6 +159,22 @@ before update on public.motrac_service_portaal_location_memberships
 for each row
 execute function public.set_updated_at();
 
+create or replace function public.touch_portal_profile_last_sign_in()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as
+$$
+begin
+  update public.motrac_service_portaal_profiles
+  set
+    last_sign_in_at = timezone('utc', now()),
+    updated_at = timezone('utc', now())
+  where auth_user_id = auth.uid();
+end;
+$$;
+
 -- Row Level Security --------------------------------------------------------
 alter table public.locations enable row level security;
 alter table public.fleet_assets enable row level security;
@@ -133,96 +183,96 @@ alter table public.fleet_activity enable row level security;
 alter table public.motrac_service_portaal_profiles enable row level security;
 alter table public.motrac_service_portaal_location_memberships enable row level security;
 
--- Publieke leesrechten voor anonieme bezoekers (frontend zonder login).
+-- Toegangsbeleid ------------------------------------------------------------
 drop policy if exists "Public select on locations" on public.locations;
-create policy "Public select on locations"
+drop policy if exists "Authenticated write locations" on public.locations;
+create policy "Portal read locations"
   on public.locations
   for select
-  using (true);
+  using (auth.role() in ('authenticated', 'service_role'));
+create policy "Service role manage locations"
+  on public.locations
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
 
 drop policy if exists "Public select on fleet assets" on public.fleet_assets;
-create policy "Public select on fleet assets"
+drop policy if exists "Authenticated write fleet assets" on public.fleet_assets;
+create policy "Portal read fleet assets"
   on public.fleet_assets
   for select
-  using (true);
+  using (auth.role() in ('authenticated', 'service_role'));
+create policy "Service role manage fleet assets"
+  on public.fleet_assets
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
 
 drop policy if exists "Public select on fleet contracts" on public.fleet_contracts;
-create policy "Public select on fleet contracts"
+drop policy if exists "Authenticated write fleet contracts" on public.fleet_contracts;
+create policy "Portal read fleet contracts"
   on public.fleet_contracts
   for select
-  using (true);
+  using (auth.role() in ('authenticated', 'service_role'));
+create policy "Service role manage fleet contracts"
+  on public.fleet_contracts
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
 
 drop policy if exists "Public select on fleet activity" on public.fleet_activity;
-create policy "Public select on fleet activity"
+drop policy if exists "Authenticated write fleet activity" on public.fleet_activity;
+create policy "Portal read fleet activity"
   on public.fleet_activity
   for select
-  using (true);
+  using (auth.role() in ('authenticated', 'service_role'));
+create policy "Service role manage fleet activity"
+  on public.fleet_activity
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
 
 drop policy if exists "Public select on profiles" on public.motrac_service_portaal_profiles;
-create policy "Public select on profiles"
+drop policy if exists "Authenticated write profiles" on public.motrac_service_portaal_profiles;
+create policy "Portal read profiles"
   on public.motrac_service_portaal_profiles
   for select
-  using (true);
+  using (auth.role() in ('authenticated', 'service_role'));
+create policy "Users manage own profile"
+  on public.motrac_service_portaal_profiles
+  for update
+  using (auth.uid() = auth_user_id)
+  with check (auth.uid() = auth_user_id);
+create policy "Service role manage profiles"
+  on public.motrac_service_portaal_profiles
+  for all
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
 
 drop policy if exists "Public select on profile memberships" on public.motrac_service_portaal_location_memberships;
-create policy "Public select on profile memberships"
+drop policy if exists "Authenticated write profile memberships" on public.motrac_service_portaal_location_memberships;
+create policy "Portal read profile memberships"
   on public.motrac_service_portaal_location_memberships
   for select
-  using (true);
-
--- Schrijfrechten voor geauthenticeerde gebruikers (bijvoorbeeld interne medewerkers).
-drop policy if exists "Authenticated write locations" on public.locations;
-create policy "Authenticated write locations"
-  on public.locations
-  for all
-  using (auth.role() in ('authenticated', 'service_role'))
-  with check (auth.role() in ('authenticated', 'service_role'));
-
-drop policy if exists "Authenticated write fleet assets" on public.fleet_assets;
-create policy "Authenticated write fleet assets"
-  on public.fleet_assets
-  for all
-  using (auth.role() in ('authenticated', 'service_role'))
-  with check (auth.role() in ('authenticated', 'service_role'));
-
-drop policy if exists "Authenticated write fleet contracts" on public.fleet_contracts;
-create policy "Authenticated write fleet contracts"
-  on public.fleet_contracts
-  for all
-  using (auth.role() in ('authenticated', 'service_role'))
-  with check (auth.role() in ('authenticated', 'service_role'));
-
-drop policy if exists "Authenticated write fleet activity" on public.fleet_activity;
-create policy "Authenticated write fleet activity"
-  on public.fleet_activity
-  for all
-  using (auth.role() in ('authenticated', 'service_role'))
-  with check (auth.role() in ('authenticated', 'service_role'));
-
-drop policy if exists "Authenticated write profiles" on public.motrac_service_portaal_profiles;
-create policy "Authenticated write profiles"
-  on public.motrac_service_portaal_profiles
-  for all
-  using (auth.role() in ('authenticated', 'service_role'))
-  with check (auth.role() in ('authenticated', 'service_role'));
-
-drop policy if exists "Authenticated write profile memberships" on public.motrac_service_portaal_location_memberships;
-create policy "Authenticated write profile memberships"
+  using (auth.role() in ('authenticated', 'service_role'));
+create policy "Service role manage profile memberships"
   on public.motrac_service_portaal_location_memberships
   for all
-  using (auth.role() in ('authenticated', 'service_role'))
-  with check (auth.role() in ('authenticated', 'service_role'));
+  using (auth.role() = 'service_role')
+  with check (auth.role() = 'service_role');
 
 -- Views --------------------------------------------------------------------
 create or replace view public.motrac_service_portaal_user_directory as
 select
   profile.id,
+  profile.auth_user_id,
   profile.display_name,
   profile.email,
   profile.phone,
   profile.role,
   profile.default_location_id,
-  coalesce(loc.name, 'Onbekende locatie') as default_location_name
+  coalesce(loc.name, 'Onbekende locatie') as default_location_name,
+  profile.last_sign_in_at
 from public.motrac_service_portaal_profiles profile
 left join public.locations loc on loc.id = profile.default_location_id;
 
