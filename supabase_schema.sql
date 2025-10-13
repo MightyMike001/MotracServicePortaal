@@ -1,35 +1,38 @@
 -- Motrac Service Portaal • Supabase schema
--- Deze SQL maakt de tabellen aan die overeenkomen met de data-structuur
--- in de frontend (locaties, vloot, contracten, activiteiten en gebruikers).
+-- Dit script richt de volledige database in (tabellen, views, policies en hulpmiddelen)
+-- voor zowel lezen als schrijven via de Supabase JavaScript client.
 
--- Zorg dat de vereiste extensies beschikbaar zijn (Supabase heeft pgcrypto standaard beschikbaar).
+-- Vereiste extensies --------------------------------------------------------
 create extension if not exists "pgcrypto";
 
+-- Custom enums --------------------------------------------------------------
 do $$
 begin
-  if not exists (select 1 from pg_type where typname = 'bmw_status' and pg_type.typnamespace = 'public'::regnamespace) then
+  if not exists (select 1 from pg_type where typname = 'bmw_status') then
     create type public.bmw_status as enum ('Goedgekeurd', 'Afkeur', 'In_beoordeling');
   end if;
-  if not exists (select 1 from pg_type where typname = 'activity_status' and pg_type.typnamespace = 'public'::regnamespace) then
+
+  if not exists (select 1 from pg_type where typname = 'activity_status') then
     create type public.activity_status as enum ('Open', 'Afgerond');
   end if;
-  if not exists (select 1 from pg_type where typname = 'activity_type' and pg_type.typnamespace = 'public'::regnamespace) then
+
+  if not exists (select 1 from pg_type where typname = 'activity_type') then
     create type public.activity_type as enum ('Onderhoud', 'Storing', 'Schade', 'Inspectie');
   end if;
-  if not exists (select 1 from pg_type where typname = 'motrac_service_portaal_role' and pg_type.typnamespace = 'public'::regnamespace) then
+
+  if not exists (select 1 from pg_type where typname = 'motrac_service_portaal_role') then
     create type public.motrac_service_portaal_role as enum ('Beheerder', 'Gebruiker', 'Gast');
   end if;
 end;
 $$;
 
--- Locaties waar assets en gebruikers aan gekoppeld zijn.
+-- Tabellen -----------------------------------------------------------------
 create table if not exists public.locations (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   created_at timestamptz not null default timezone('utc', now())
 );
 
--- Overzicht van alle heftrucks / voertuigen.
 create table if not exists public.fleet_assets (
   id text primary key,
   reference text,
@@ -44,7 +47,6 @@ create table if not exists public.fleet_assets (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
--- Functie om automatisch de updated_at kolom bij te werken.
 create or replace function public.set_updated_at()
 returns trigger as
 $$
@@ -54,15 +56,12 @@ begin
 end;
 $$ language plpgsql;
 
--- Houd de updated_at kolom automatisch bij.
 drop trigger if exists update_fleet_assets_timestamp on public.fleet_assets;
-
 create trigger update_fleet_assets_timestamp
 before update on public.fleet_assets
 for each row
 execute function public.set_updated_at();
 
--- Contractinformatie behorend bij een asset (1-op-1).
 create table if not exists public.fleet_contracts (
   id uuid primary key default gen_random_uuid(),
   fleet_id text not null references public.fleet_assets(id) on delete cascade,
@@ -76,7 +75,6 @@ create table if not exists public.fleet_contracts (
   unique (fleet_id)
 );
 
--- Historiek van meldingen / activiteiten per asset.
 create table if not exists public.fleet_activity (
   id uuid primary key default gen_random_uuid(),
   fleet_id text not null references public.fleet_assets(id) on delete cascade,
@@ -89,7 +87,6 @@ create table if not exists public.fleet_activity (
   unique (fleet_id, activity_code)
 );
 
--- Gebruikersprofielen voor het Motrac Service Portaal.
 create table if not exists public.motrac_service_portaal_profiles (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid unique references auth.users(id) on delete set null,
@@ -104,13 +101,11 @@ create table if not exists public.motrac_service_portaal_profiles (
 );
 
 drop trigger if exists update_motrac_profiles_timestamp on public.motrac_service_portaal_profiles;
-
 create trigger update_motrac_profiles_timestamp
 before update on public.motrac_service_portaal_profiles
 for each row
 execute function public.set_updated_at();
 
--- Koppelt gebruikers aan meerdere locaties binnen het portaal.
 create table if not exists public.motrac_service_portaal_location_memberships (
   profile_id uuid references public.motrac_service_portaal_profiles(id) on delete cascade,
   location_id uuid references public.locations(id) on delete cascade,
@@ -120,19 +115,105 @@ create table if not exists public.motrac_service_portaal_location_memberships (
   primary key (profile_id, location_id)
 );
 
--- Garandeert één primaire locatie per gebruiker.
 create unique index if not exists motrac_service_portaal_location_memberships_primary_unique
   on public.motrac_service_portaal_location_memberships (profile_id)
   where is_primary;
 
 drop trigger if exists update_motrac_memberships_timestamp on public.motrac_service_portaal_location_memberships;
-
 create trigger update_motrac_memberships_timestamp
 before update on public.motrac_service_portaal_location_memberships
 for each row
 execute function public.set_updated_at();
 
--- View voor het gebruikersoverzicht in de frontend.
+-- Row Level Security --------------------------------------------------------
+alter table public.locations enable row level security;
+alter table public.fleet_assets enable row level security;
+alter table public.fleet_contracts enable row level security;
+alter table public.fleet_activity enable row level security;
+alter table public.motrac_service_portaal_profiles enable row level security;
+alter table public.motrac_service_portaal_location_memberships enable row level security;
+
+-- Publieke leesrechten voor anonieme bezoekers (frontend zonder login).
+drop policy if exists "Public select on locations" on public.locations;
+create policy "Public select on locations"
+  on public.locations
+  for select
+  using (true);
+
+drop policy if exists "Public select on fleet assets" on public.fleet_assets;
+create policy "Public select on fleet assets"
+  on public.fleet_assets
+  for select
+  using (true);
+
+drop policy if exists "Public select on fleet contracts" on public.fleet_contracts;
+create policy "Public select on fleet contracts"
+  on public.fleet_contracts
+  for select
+  using (true);
+
+drop policy if exists "Public select on fleet activity" on public.fleet_activity;
+create policy "Public select on fleet activity"
+  on public.fleet_activity
+  for select
+  using (true);
+
+drop policy if exists "Public select on profiles" on public.motrac_service_portaal_profiles;
+create policy "Public select on profiles"
+  on public.motrac_service_portaal_profiles
+  for select
+  using (true);
+
+drop policy if exists "Public select on profile memberships" on public.motrac_service_portaal_location_memberships;
+create policy "Public select on profile memberships"
+  on public.motrac_service_portaal_location_memberships
+  for select
+  using (true);
+
+-- Schrijfrechten voor geauthenticeerde gebruikers (bijvoorbeeld interne medewerkers).
+drop policy if exists "Authenticated write locations" on public.locations;
+create policy "Authenticated write locations"
+  on public.locations
+  for all
+  using (auth.role() in ('authenticated', 'service_role'))
+  with check (auth.role() in ('authenticated', 'service_role'));
+
+drop policy if exists "Authenticated write fleet assets" on public.fleet_assets;
+create policy "Authenticated write fleet assets"
+  on public.fleet_assets
+  for all
+  using (auth.role() in ('authenticated', 'service_role'))
+  with check (auth.role() in ('authenticated', 'service_role'));
+
+drop policy if exists "Authenticated write fleet contracts" on public.fleet_contracts;
+create policy "Authenticated write fleet contracts"
+  on public.fleet_contracts
+  for all
+  using (auth.role() in ('authenticated', 'service_role'))
+  with check (auth.role() in ('authenticated', 'service_role'));
+
+drop policy if exists "Authenticated write fleet activity" on public.fleet_activity;
+create policy "Authenticated write fleet activity"
+  on public.fleet_activity
+  for all
+  using (auth.role() in ('authenticated', 'service_role'))
+  with check (auth.role() in ('authenticated', 'service_role'));
+
+drop policy if exists "Authenticated write profiles" on public.motrac_service_portaal_profiles;
+create policy "Authenticated write profiles"
+  on public.motrac_service_portaal_profiles
+  for all
+  using (auth.role() in ('authenticated', 'service_role'))
+  with check (auth.role() in ('authenticated', 'service_role'));
+
+drop policy if exists "Authenticated write profile memberships" on public.motrac_service_portaal_location_memberships;
+create policy "Authenticated write profile memberships"
+  on public.motrac_service_portaal_location_memberships
+  for all
+  using (auth.role() in ('authenticated', 'service_role'))
+  with check (auth.role() in ('authenticated', 'service_role'));
+
+-- Views --------------------------------------------------------------------
 create or replace view public.motrac_service_portaal_user_directory as
 select
   profile.id,
@@ -145,14 +226,48 @@ select
 from public.motrac_service_portaal_profiles profile
 left join public.locations loc on loc.id = profile.default_location_id;
 
--- Handige view voor frontend filters om "Alle locaties" optie op te halen.
 create or replace view public.locations_with_all as
 select '00000000-0000-0000-0000-000000000000'::uuid as id,
        'Alle locaties'::text as name
 union all
 select id, name from public.locations;
 
--- Voorbeeld seed-data (optioneel uit te voeren na het aanmaken van de tabellen).
+create or replace view public.fleet_assets_overview as
+select
+  asset.id,
+  asset.reference,
+  asset.model,
+  asset.bmw_status,
+  asset.bmw_expiry,
+  asset.odo,
+  asset.odo_date,
+  asset.active,
+  loc.name as location_name,
+  coalesce(contract_data.contract, '{}'::jsonb) as contract,
+  coalesce(activity_data.activity, '[]'::jsonb) as activity
+from public.fleet_assets asset
+left join public.locations loc on loc.id = asset.location_id
+left join lateral (
+  select to_jsonb(fc.*) - 'id' - 'fleet_id' - 'created_at' as contract
+  from public.fleet_contracts fc
+  where fc.fleet_id = asset.id
+) contract_data on true
+left join lateral (
+  select jsonb_agg(
+    jsonb_build_object(
+      'activity_code', fa.activity_code,
+      'activity_type', fa.activity_type,
+      'description', fa.description,
+      'status', fa.status,
+      'activity_date', fa.activity_date
+    )
+    order by fa.activity_date desc, fa.created_at desc
+  ) as activity
+  from public.fleet_activity fa
+  where fa.fleet_id = asset.id
+) activity_data on true;
+
+-- Seeds (optioneel) --------------------------------------------------------
 -- insert into public.locations (name) values
 --   ('Demovloot Motrac – Almere'),
 --   ('Demovloot Motrac – Venlo'),
