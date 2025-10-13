@@ -1,29 +1,38 @@
 import { LOCATIONS, FLEET } from '../data.js';
 import { state } from '../state.js';
 import { $, fmtDate, formatOdoHtml } from '../utils.js';
+import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
 
 export function populateLocationFilters() {
-  if (!LOCATIONS.includes(state.fleetFilter.location)) {
-    state.fleetFilter.location = LOCATIONS[0] || 'Alle locaties';
-  }
-  const locOptions = LOCATIONS.map(location => {
+  const accessibleFleet = filterFleetByAccess(FLEET);
+  const accessibleLocationSet = new Set(accessibleFleet.map(truck => truck.location).filter(Boolean));
+  const allowedLocations = LOCATIONS.filter(location => location === 'Alle locaties' || accessibleLocationSet.has(location));
+  const resolvedLocation = ensureAccessibleLocation(state.fleetFilter.location, allowedLocations);
+  state.fleetFilter.location = resolvedLocation;
+
+  const locOptions = allowedLocations.map(location => {
     const selected = location === state.fleetFilter.location ? 'selected' : '';
     return `<option ${selected}>${location}</option>`;
   }).join('');
   $('#locationFilter').innerHTML = locOptions;
-  $('#activityLocationFilter').innerHTML = LOCATIONS.map(location => `<option>${location}</option>`).join('');
-  $('#activityLocationFilter').value = 'Alle locaties';
-  $('#userLocation').innerHTML = LOCATIONS.filter(location => location !== 'Alle locaties')
+  $('#activityLocationFilter').innerHTML = allowedLocations.map(location => `<option>${location}</option>`).join('');
+  $('#activityLocationFilter').value = allowedLocations.includes('Alle locaties') ? 'Alle locaties' : allowedLocations[0] || '';
+
+  $('#userLocation').innerHTML = allowedLocations
+    .filter(location => location !== 'Alle locaties')
     .map(location => `<option>${location}</option>`)
     .join('');
-  $('#ticketTruck').innerHTML = FLEET.filter(truck => truck.active)
+
+  const activeAccessibleFleet = accessibleFleet.filter(truck => truck.active);
+  $('#ticketTruck').innerHTML = activeAccessibleFleet
     .map(truck => `<option value="${truck.id}">${truck.id} — ${truck.location}</option>`)
     .join('');
 }
 
 function filteredFleet() {
   const query = state.fleetFilter.query.trim().toLowerCase();
-  return FLEET.filter(truck => truck.active)
+  return filterFleetByAccess(FLEET)
+    .filter(truck => truck.active)
     .filter(truck => state.fleetFilter.location === 'Alle locaties' || truck.location === state.fleetFilter.location)
     .filter(truck => {
       if (!query) return true;
@@ -42,6 +51,7 @@ export function renderFleet() {
             <div class="text-xs text-gray-500">${truck.ref}</div>
           </button>
         </td>
+        <td class="py-3 px-3">${truck.fleetName || '—'}</td>
         <td class="py-3 px-3">${truck.model}</td>
         <td class="py-3 px-3">${truck.bmwStatus}</td>
         <td class="py-3 px-3">${fmtDate(truck.bmwExpiry)}</td>
@@ -64,5 +74,5 @@ export function renderFleet() {
       </tr>`;
   }).join('');
 
-  $('#fleetTbody').innerHTML = rows || '<tr><td colspan="7" class="py-6 text-center text-gray-500">Geen resultaten</td></tr>';
+  $('#fleetTbody').innerHTML = rows || '<tr><td colspan="8" class="py-6 text-center text-gray-500">Geen resultaten</td></tr>';
 }

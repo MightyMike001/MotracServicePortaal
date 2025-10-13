@@ -2,7 +2,13 @@ const DEFAULT_LOCATIONS = [
   'Alle locaties',
   'Demovloot Motrac – Almere',
   'Demovloot Motrac – Venlo',
-  'Demovloot Motrac – Zwijndrecht'
+  'Demovloot Motrac – Zwijndrecht',
+  'Van Dijk Logistics – Rotterdam'
+];
+
+const DEFAULT_CUSTOMER_FLEETS = [
+  { id: 'CF-DEMO', name: 'Motrac Demovloot' },
+  { id: 'CF-VANDIJK', name: 'Van Dijk Logistics' }
 ];
 
 const DEFAULT_FLEET = [
@@ -15,6 +21,7 @@ const DEFAULT_FLEET = [
     odo: 1523,
     odoDate: '2025-09-28',
     location: 'Demovloot Motrac – Almere',
+    fleetId: 'CF-DEMO',
     activity: [
       { id: 'M-1001', type: 'Onderhoud', desc: 'Periodieke servicebeurt', status: 'Afgerond', date: '2025-06-20' },
       { id: 'M-1010', type: 'Storing', desc: 'Mast-sensor foutcode', status: 'Open', date: '2025-10-01' }
@@ -38,6 +45,7 @@ const DEFAULT_FLEET = [
     odo: 3420,
     odoDate: '2025-09-10',
     location: 'Demovloot Motrac – Zwijndrecht',
+    fleetId: 'CF-DEMO',
     activity: [],
     contract: {
       nummer: 'CTR-2022-ZWD-019',
@@ -57,7 +65,8 @@ const DEFAULT_FLEET = [
     bmwExpiry: '2025-09-01',
     odo: 801,
     odoDate: '2025-09-30',
-    location: 'Demovloot Motrac – Venlo',
+    location: 'Van Dijk Logistics – Rotterdam',
+    fleetId: 'CF-VANDIJK',
     activity: [
       { id: 'M-1020', type: 'Schade', desc: 'Vork beschadigd', status: 'Open', date: '2025-10-03' }
     ],
@@ -84,12 +93,14 @@ const DEFAULT_USERS = [
   { id: 'U8', name: 'Peter Groen', email: 'p.groen@example.com', phone: '+31 6 44445555', location: 'Demovloot Motrac – Venlo', role: 'Gebruiker' },
   { id: 'U9', name: 'Laura Kok', email: 'l.kok@example.com', phone: '+31 6 55556666', location: 'Demovloot Motrac – Almere', role: 'Gebruiker' },
   { id: 'U10', name: 'William de Vries', email: 'w.vries@example.com', phone: '+31 6 66667777', location: 'Demovloot Motrac – Zwijndrecht', role: 'Gebruiker' },
-  { id: 'U11', name: 'Noa Willems', email: 'n.willems@example.com', phone: '+31 6 77778888', location: 'Demovloot Motrac – Almere', role: 'Gebruiker' }
+  { id: 'U11', name: 'Noa Willems', email: 'n.willems@example.com', phone: '+31 6 77778888', location: 'Demovloot Motrac – Almere', role: 'Gebruiker' },
+  { id: 'U12', name: 'Anja van Dijk', email: 'a.vandijk@vandijklogistics.nl', phone: '+31 6 88889999', location: 'Van Dijk Logistics – Rotterdam', role: 'Klant' }
 ];
 
 export let LOCATIONS = [...DEFAULT_LOCATIONS];
 export let FLEET = DEFAULT_FLEET.map(item => ({
   ...item,
+  fleetName: DEFAULT_CUSTOMER_FLEETS.find(fleet => fleet.id === item.fleetId)?.name || '—',
   activity: item.activity.map(activity => ({ ...activity }))
 }));
 export let USERS = [...DEFAULT_USERS];
@@ -104,9 +115,21 @@ export function setLocations(locations = []) {
 }
 
 export function setFleet(fleet = []) {
-  if (Array.isArray(fleet)) {
-    FLEET = fleet;
+  if (!Array.isArray(fleet)) {
+    return;
   }
+
+  FLEET = fleet.map(item => ({
+    ...item,
+    fleetId: item.fleetId || item.customerFleetId || item.customer_fleet_id || null,
+    fleetName:
+      item.fleetName ||
+      item.customerFleetName ||
+      item.customer_fleet_name ||
+      (item.fleetId ? DEFAULT_CUSTOMER_FLEETS.find(fleetDef => fleetDef.id === item.fleetId)?.name : '—') ||
+      '—',
+    activity: Array.isArray(item.activity) ? item.activity.map(activity => ({ ...activity })) : []
+  }));
 }
 
 export function setUsers(users = []) {
@@ -119,6 +142,7 @@ export function resetToDefaults() {
   LOCATIONS = [...DEFAULT_LOCATIONS];
   FLEET = DEFAULT_FLEET.map(item => ({
     ...item,
+    fleetName: DEFAULT_CUSTOMER_FLEETS.find(fleet => fleet.id === item.fleetId)?.name || '—',
     activity: item.activity.map(activity => ({ ...activity }))
   }));
   USERS = [...DEFAULT_USERS];
