@@ -392,8 +392,8 @@ create policy "Service role manage fleet memberships"
   using (auth.role() = 'service_role')
   with check (auth.role() = 'service_role');
 
--- Views --------------------------------------------------------------------
-create or replace view public.motrac_service_portaal_user_directory as
+drop view if exists public.motrac_service_portaal_user_directory;
+create view public.motrac_service_portaal_user_directory as
 select
   profile.id,
   profile.auth_user_id,
@@ -407,13 +407,15 @@ select
 from public.motrac_service_portaal_profiles profile
 left join public.locations loc on loc.id = profile.default_location_id;
 
-create or replace view public.locations_with_all as
+drop view if exists public.locations_with_all;
+create view public.locations_with_all as
 select '00000000-0000-0000-0000-000000000000'::uuid as id,
        'Alle locaties'::text as name
 union all
 select id, name from public.locations;
 
-create or replace view public.fleet_assets_overview as
+drop view if exists public.fleet_assets_overview;
+create view public.fleet_assets_overview as
 select
   asset.id,
   asset.reference,
@@ -451,7 +453,8 @@ left join lateral (
   where fa.fleet_id = asset.id
 ) activity_data on true;
 
-create or replace view public.motrac_service_portaal_profile_fleet_memberships as
+drop view if exists public.motrac_service_portaal_profile_fleet_memberships;
+create view public.motrac_service_portaal_profile_fleet_memberships as
 select
   membership.profile_id,
   membership.customer_fleet_id,
