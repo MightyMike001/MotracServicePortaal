@@ -47,13 +47,9 @@ function createNoCacheFetch() {
 const { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } = resolveSupabaseConfig();
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: false
-  },
   global: {
     headers: {
       apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       'Cache-Control': 'no-store',
       Pragma: 'no-cache',
       Expires: '0'
