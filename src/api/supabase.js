@@ -1,342 +1,309 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.0';
+import { LOCATIONS, FLEET, USERS } from '../data.js';
 
-/**
- * Resolve the Supabase configuration.
- *
- * The configuration can be provided in three ways (priority order):
- *  1. Via a global `window.__SUPABASE_CONFIG__` object (useful for deployments).
- *  2. Via environment variables injected at build time.
- *  3. Falling back to the default development credentials that ship with the repo.
- */
-function resolveSupabaseConfig() {
-  const globalConfig = typeof window !== 'undefined' ? window.__SUPABASE_CONFIG__ : undefined;
+const TEST_CREDENTIALS = {
+  password: 'test',
+  aliases: ['test', 'test@example.com', 'test@motrac.nl']
+};
 
-  const url =
-    globalConfig?.url ||
-    (typeof process !== 'undefined' ? process.env?.SUPABASE_URL : undefined) ||
-    'https://gizddlytlnnkvlgpvkcs.supabase.co';
+const TEST_PROFILE = {
+  id: 'profile-test',
+  auth_user_id: 'auth-user-test',
+  display_name: 'Testbeheerder',
+  email: 'test@motrac.nl',
+  phone: '+31 6 12345678',
+  role: 'Beheerder',
+  default_location_id: null,
+  default_location_name: 'Alle locaties',
+  last_sign_in_at: null
+};
 
-  const anonKey =
-    globalConfig?.anonKey ||
-    (typeof process !== 'undefined' ? process.env?.SUPABASE_ANON_KEY : undefined) ||
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpemRkbHl0bG5ua3ZsZ3B2a2NzIiwi' +
-      'cm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNzQ4OTEsImV4cCI6MjA3NTg1MDg5MX0.F8cRkJC5pq0O9eG-hL89Y33ga56AXd-moaSlOtpOg3A';
+let currentSession = null;
+const authListeners = new Set();
 
-  if (!url || !anonKey) {
-    throw new Error('Supabase configuratie ontbreekt. Controleer de URL en anon key.');
-  }
-
-  return { url, anonKey };
+function cloneLocations() {
+  return [...LOCATIONS];
 }
 
-function createNoCacheFetch() {
-  return (input, init = {}) => {
-    const headers = new Headers(init.headers || {});
-    headers.set('Cache-Control', 'no-store');
-    headers.set('Pragma', 'no-cache');
-    headers.set('Expires', '0');
-
-    return fetch(input, {
-      ...init,
-      cache: 'no-store',
-      headers
-    });
+function cloneFleetItem(item) {
+  return {
+    ...item,
+    activity: Array.isArray(item.activity) ? item.activity.map(entry => ({ ...entry })) : [],
+    contract: item.contract ? { ...item.contract } : null
   };
 }
 
-const { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } = resolveSupabaseConfig();
+function cloneFleet() {
+  return FLEET.map(cloneFleetItem);
+}
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  global: {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      'Cache-Control': 'no-store',
-      Pragma: 'no-cache',
-      Expires: '0'
-    },
-    fetch: createNoCacheFetch()
+function cloneUsers() {
+  return USERS.map(user => ({ ...user }));
+}
+
+function cloneAccountRequest(request) {
+  return { ...request };
+}
+
+const accountRequests = [
+  {
+    id: 'REQ-1001',
+    name: 'Sanne Willems',
+    organisation: 'Willems Logistiek',
+    email: 'sanne.willems@example.com',
+    phone: '+31 6 23456789',
+    requestNotes: 'Wil toegang tot onderhoudsrapportages.',
+    requestedRole: 'Gebruiker',
+    status: 'pending',
+    loginEnabled: true,
+    passwordSetAt: null,
+    authUserId: null,
+    assignedRole: null,
+    assignedFleetId: null,
+    assignedFleetName: null,
+    assignedByProfileId: null,
+    completedAt: null,
+    submittedAt: '2025-09-28T08:30:00Z',
+    updatedAt: '2025-09-28T08:30:00Z'
+  },
+  {
+    id: 'REQ-1000',
+    name: 'Erik de Groot',
+    organisation: 'Motrac NL',
+    email: 'erik.degroot@motrac.nl',
+    phone: '+31 6 11223344',
+    requestNotes: 'Account nodig voor vlootbeheer.',
+    requestedRole: 'Vlootbeheerder',
+    status: 'approved',
+    loginEnabled: true,
+    passwordSetAt: '2025-09-20T09:15:00Z',
+    authUserId: 'auth-user-erik',
+    assignedRole: 'Vlootbeheerder',
+    assignedFleetId: 'CF-DEMO',
+    assignedFleetName: 'Motrac Demovloot',
+    assignedByProfileId: TEST_PROFILE.id,
+    completedAt: '2025-09-21T10:05:00Z',
+    submittedAt: '2025-09-18T13:20:00Z',
+    updatedAt: '2025-09-21T10:05:00Z'
+  },
+  {
+    id: 'REQ-0999',
+    name: 'Lotte van Rijn',
+    organisation: 'Van Dijk Logistics',
+    email: 'lotte.vanrijn@vandijklogistics.nl',
+    phone: '+31 6 55667788',
+    requestNotes: 'Alleen inzicht in eigen vloot noodzakelijk.',
+    requestedRole: 'Klant',
+    status: 'rejected',
+    loginEnabled: false,
+    passwordSetAt: null,
+    authUserId: null,
+    assignedRole: null,
+    assignedFleetId: null,
+    assignedFleetName: null,
+    assignedByProfileId: TEST_PROFILE.id,
+    completedAt: '2025-09-15T15:45:00Z',
+    submittedAt: '2025-09-12T11:05:00Z',
+    updatedAt: '2025-09-15T15:45:00Z'
   }
-});
+];
+
+function resolveFleetName(fleetId) {
+  if (!fleetId) return null;
+  const fleet = FLEET.find(item => item.fleetId === fleetId);
+  return fleet?.fleetName ?? null;
+}
+
+function emitAuthEvent(event, session) {
+  authListeners.forEach(listener => {
+    try {
+      listener(event, session);
+    } catch (error) {
+      console.error('Auth listener error', error);
+    }
+  });
+}
+
+function generateRequestId() {
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `REQ-${random}`;
+}
+
+function findAccountRequest(id) {
+  return accountRequests.find(request => request.id === id) || null;
+}
 
 export async function getCurrentSession() {
-  const result = await supabase.auth.getSession();
-  if (result.error) throw result.error;
-  return result.data;
+  return { session: currentSession };
 }
 
 export function onAuthStateChange(callback) {
-  return supabase.auth.onAuthStateChange(callback);
+  if (typeof callback !== 'function') {
+    return { data: null, error: new Error('Callback moet een functie zijn.') };
+  }
+
+  authListeners.add(callback);
+
+  return {
+    data: {
+      subscription: {
+        unsubscribe() {
+          authListeners.delete(callback);
+        }
+      }
+    },
+    error: null
+  };
+}
+
+function createSession() {
+  const now = new Date().toISOString();
+  TEST_PROFILE.last_sign_in_at = now;
+  return {
+    access_token: 'local-session-token',
+    token_type: 'bearer',
+    expires_in: 60 * 60 * 4,
+    user: {
+      id: TEST_PROFILE.auth_user_id,
+      email: TEST_PROFILE.email,
+      user_metadata: {
+        full_name: TEST_PROFILE.display_name
+      }
+    },
+    created_at: now
+  };
+}
+
+function matchesTestCredentials(value) {
+  if (!value) return false;
+  const lowered = value.toLowerCase();
+  return TEST_CREDENTIALS.aliases.some(alias => alias.toLowerCase() === lowered);
 }
 
 export async function signInWithPassword({ email, password }) {
-  const result = await supabase.auth.signInWithPassword({ email, password });
-  if (result.error) throw result.error;
-  return result.data;
+  if (matchesTestCredentials(email) && password === TEST_CREDENTIALS.password) {
+    currentSession = createSession();
+    emitAuthEvent('SIGNED_IN', currentSession);
+    return { session: currentSession, user: currentSession.user };
+  }
+
+  const error = new Error('Invalid login credentials');
+  error.status = 400;
+  throw error;
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
-}
-
-function toNumber(value) {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : null;
-}
-
-function normaliseContract(contractLike) {
-  const contract = Array.isArray(contractLike) ? contractLike[0] : contractLike;
-  if (!contract) {
-    return {
-      nummer: '—',
-      start: null,
-      eind: null,
-      uren: null,
-      type: '—',
-      model: '—'
-    };
+  if (currentSession) {
+    currentSession = null;
+    emitAuthEvent('SIGNED_OUT', null);
   }
-
-  return {
-    nummer: contract.contract_number ?? '—',
-    start: contract.start_date ?? null,
-    eind: contract.end_date ?? null,
-    uren: toNumber(contract.hours_per_year),
-    type: contract.contract_type ?? '—',
-    model: contract.model ?? '—'
-  };
-}
-
-function normaliseActivity(activity = []) {
-  return activity
-    .map(item => ({
-      id: item.activity_code ?? '—',
-      type: item.activity_type ?? 'Onbekend',
-      desc: item.description ?? '',
-      status: item.status ?? 'Open',
-      date: item.activity_date ?? null
-    }))
-    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-}
-
-function normaliseAccountRequest(entry) {
-  if (!entry) return null;
-
-  return {
-    id: entry.id,
-    name: entry.name ?? '—',
-    organisation: entry.organisation ?? '—',
-    email: entry.email ?? '',
-    phone: entry.phone ?? '',
-    requestNotes: entry.request_notes ?? '',
-    requestedRole: entry.requested_role ?? null,
-    status: entry.status ?? 'pending',
-    loginEnabled: entry.login_enabled ?? false,
-    passwordSetAt: entry.password_set_at ?? null,
-    authUserId: entry.auth_user_id ?? null,
-    assignedRole: entry.assigned_role ?? null,
-    assignedFleetId: entry.assigned_fleet_id ?? null,
-    assignedFleetName: entry.assigned_fleet_name ?? null,
-    assignedByProfileId: entry.assigned_by_profile_id ?? null,
-    completedAt: entry.completed_at ?? null,
-    submittedAt: entry.created_at ?? null,
-    updatedAt: entry.updated_at ?? null
-  };
-}
-
-async function fetchAccountRequestById(id) {
-  if (!id) return null;
-
-  const { data, error } = await supabase
-    .from('motrac_service_portaal_account_request_overview')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error) throw error;
-  return normaliseAccountRequest(data);
 }
 
 export async function fetchLocations() {
-  const { data, error } = await supabase
-    .from('locations_with_all')
-    .select('id, name')
-    .order('name');
-
-  if (error) throw error;
-
-  const uniqueNames = [];
-  const seen = new Set();
-
-  for (const location of data || []) {
-    const name = location?.name;
-    if (!name || seen.has(name)) continue;
-    seen.add(name);
-    uniqueNames.push(name);
-  }
-
-  return seen.has('Alle locaties')
-    ? uniqueNames
-    : ['Alle locaties', ...uniqueNames];
+  return cloneLocations();
 }
 
 export async function fetchFleet() {
-  const { data, error } = await supabase
-    .from('fleet_assets_overview')
-    .select('*')
-    .order('id');
-
-  if (error) throw error;
-
-  return (data || []).map(item => ({
-    id: item.id,
-    fleetId: item.customer_fleet_id ?? null,
-    fleetName: item.customer_fleet_name ?? '—',
-    ref: item.reference ?? '—',
-    model: item.model ?? '—',
-    modelType: item.model_type ?? '—',
-    bmwStatus: item.bmw_status ?? 'Onbekend',
-    bmwExpiry: item.bmw_expiry ?? null,
-    hours: toNumber(item.hours ?? item.odo),
-    hoursDate: item.hours_date ?? item.odo_date ?? null,
-    odo: toNumber(item.hours ?? item.odo),
-    odoDate: item.hours_date ?? item.odo_date ?? null,
-    location: item.location_name ?? 'Onbekende locatie',
-    activity: normaliseActivity(item.activity ?? []),
-    contract: normaliseContract(item.contract),
-    openActivityCount: (() => {
-      const value = toNumber(item.open_activity_count);
-      return value == null ? 0 : value;
-    })(),
-    active: item.active ?? true
-  }));
+  return cloneFleet();
 }
 
 export async function fetchUsers() {
-  const { data, error } = await supabase
-    .from('motrac_service_portaal_user_directory')
-    .select('id, display_name, email, phone, role, default_location_name')
-    .order('display_name');
-
-  if (error) throw error;
-
-  return (data || []).map(user => ({
-    id: user.id,
-    name: user.display_name ?? '—',
-    email: user.email ?? '',
-    phone: user.phone ?? '',
-    location: user.default_location_name ?? '—',
-    role: user.role ?? 'Gebruiker'
-  }));
+  return cloneUsers();
 }
 
 export async function fetchAccountRequests() {
-  const { data, error } = await supabase
-    .from('motrac_service_portaal_account_request_overview')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return (data || []).map(normaliseAccountRequest).filter(Boolean);
+  return accountRequests.map(cloneAccountRequest);
 }
 
 export async function fetchProfileByAuthUserId(authUserId) {
   if (!authUserId) return null;
-
-  const { data, error } = await supabase
-    .from('motrac_service_portaal_user_directory')
-    .select(
-      'id, auth_user_id, display_name, email, phone, role, default_location_id, default_location_name, last_sign_in_at'
-    )
-    .eq('auth_user_id', authUserId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data ?? null;
+  if (authUserId === TEST_PROFILE.auth_user_id) {
+    return { ...TEST_PROFILE };
+  }
+  return null;
 }
 
 export async function touchProfileSignIn() {
-  const { error } = await supabase.rpc('touch_portal_profile_last_sign_in');
-  if (error) throw error;
+  TEST_PROFILE.last_sign_in_at = new Date().toISOString();
 }
 
 export async function fetchFleetMemberships(profileId) {
   if (!profileId) return [];
+  if (profileId === TEST_PROFILE.id) {
+    return [];
+  }
+  return [];
+}
 
-  const { data, error } = await supabase
-    .from('motrac_service_portaal_profile_fleet_memberships')
-    .select('customer_fleet_id, customer_fleet_name')
-    .eq('profile_id', profileId);
-
-  if (error) throw error;
-
-  return (data || []).map(item => ({
-    fleetId: item.customer_fleet_id ?? null,
-    fleetName: item.customer_fleet_name ?? '—'
-  }));
+function upsertAccountRequest(request) {
+  const existingIndex = accountRequests.findIndex(item => item.id === request.id);
+  if (existingIndex === -1) {
+    accountRequests.unshift(request);
+  } else {
+    accountRequests[existingIndex] = request;
+  }
+  return cloneAccountRequest(request);
 }
 
 export async function createAccountRequest({ name, organisation, email, phone, requestNotes }) {
-  const payload = {
-    name: name?.trim(),
-    organisation: organisation?.trim(),
-    email: email?.trim()?.toLowerCase(),
-    phone: phone?.trim() || null,
-    request_notes: requestNotes?.trim() || null
+  const now = new Date().toISOString();
+  const newRequest = {
+    id: generateRequestId(),
+    name: name || '—',
+    organisation: organisation || '—',
+    email: email || '',
+    phone: phone || '',
+    requestNotes: requestNotes || '',
+    requestedRole: null,
+    status: 'pending',
+    loginEnabled: true,
+    passwordSetAt: null,
+    authUserId: null,
+    assignedRole: null,
+    assignedFleetId: null,
+    assignedFleetName: null,
+    assignedByProfileId: null,
+    completedAt: null,
+    submittedAt: now,
+    updatedAt: now
   };
 
-  const { data, error } = await supabase
-    .from('motrac_service_portaal_account_requests')
-    .insert(payload)
-    .select('id')
-    .single();
-
-  if (error) throw error;
-  return fetchAccountRequestById(data?.id);
+  return upsertAccountRequest(newRequest);
 }
 
 export async function approveAccountRequest({ id, assignedRole, assignedFleetId, assignedByProfileId }) {
-  if (!id) throw new Error('Accountaanvraag-ID ontbreekt.');
+  const existing = findAccountRequest(id);
+  if (!existing) {
+    throw new Error('Accountaanvraag niet gevonden.');
+  }
 
-  const payload = {
-    status: 'approved',
-    assigned_role: assignedRole || null,
-    assigned_fleet_id: assignedFleetId || null,
-    assigned_by_profile_id: assignedByProfileId || null,
-    completed_at: new Date().toISOString()
-  };
+  const now = new Date().toISOString();
+  existing.status = 'approved';
+  existing.assignedRole = assignedRole || 'Gebruiker';
+  existing.assignedFleetId = assignedFleetId || null;
+  existing.assignedFleetName = resolveFleetName(existing.assignedFleetId);
+  existing.assignedByProfileId = assignedByProfileId || null;
+  existing.loginEnabled = true;
+  existing.completedAt = now;
+  existing.updatedAt = now;
 
-  const { data, error } = await supabase
-    .from('motrac_service_portaal_account_requests')
-    .update(payload)
-    .eq('id', id)
-    .select('id')
-    .single();
-
-  if (error) throw error;
-  return fetchAccountRequestById(data?.id);
+  return upsertAccountRequest(existing);
 }
 
 export async function rejectAccountRequest({ id, assignedByProfileId }) {
-  if (!id) throw new Error('Accountaanvraag-ID ontbreekt.');
+  const existing = findAccountRequest(id);
+  if (!existing) {
+    throw new Error('Accountaanvraag niet gevonden.');
+  }
 
-  const payload = {
-    status: 'rejected',
-    assigned_role: null,
-    assigned_fleet_id: null,
-    assigned_by_profile_id: assignedByProfileId || null,
-    login_enabled: false,
-    completed_at: new Date().toISOString()
-  };
+  const now = new Date().toISOString();
+  existing.status = 'rejected';
+  existing.assignedRole = null;
+  existing.assignedFleetId = null;
+  existing.assignedFleetName = null;
+  existing.assignedByProfileId = assignedByProfileId || null;
+  existing.loginEnabled = false;
+  existing.completedAt = now;
+  existing.updatedAt = now;
 
-  const { data, error } = await supabase
-    .from('motrac_service_portaal_account_requests')
-    .update(payload)
-    .eq('id', id)
-    .select('id')
-    .single();
-
-  if (error) throw error;
-  return fetchAccountRequestById(data?.id);
+  return upsertAccountRequest(existing);
 }
