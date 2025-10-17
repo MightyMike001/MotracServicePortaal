@@ -110,8 +110,8 @@
   <div id="app" class="min-h-screen hidden">
     <!-- Top Navigation -->
     <header class="bg-white shadow-soft sticky top-0 z-40">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-        <div class="flex items-center gap-3 order-1 sm:order-1">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3 order-1">
           <img
             src="./assets/motrac-logo.svg"
             alt="Motrac logo"
@@ -122,63 +122,88 @@
             <p class="text-xs text-gray-500">Prototype • geen echte data</p>
           </div>
         </div>
-        <nav
-          id="mainNav"
-          class="order-3 hidden w-full border-t border-gray-100 pt-3 sm:order-2 sm:border-0 sm:pt-0 sm:flex sm:flex-1 sm:items-center sm:gap-6"
-        >
-          <ul class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm font-medium w-full sm:w-auto" id="mainTabs">
-            <li class="w-full sm:w-auto">
-              <button data-tab="vloot" class="tab-active w-full text-left sm:w-auto sm:text-center py-2 px-3">Vloot</button>
-            </li>
-            <li class="w-full sm:w-auto">
-              <button data-tab="activiteit" class="w-full text-left sm:w-auto sm:text-center py-2 px-3">Activiteit</button>
-            </li>
-            <li class="w-full sm:w-auto">
-              <button data-tab="users" class="w-full text-left sm:w-auto sm:text-center py-2 px-3">Gebruikersbeheer</button>
-            </li>
-          </ul>
-        </nav>
-        <div class="flex flex-wrap items-center gap-2 ml-auto order-2 sm:order-3 sm:ml-0 sm:justify-end">
-          <button
-            id="btnNewTicketMobile"
-            class="sm:hidden inline-flex items-center gap-2 bg-motrac-red text-white px-3 py-2 rounded-lg shadow-soft"
-            type="button"
-          >
-            <span>Servicemelding</span>
-          </button>
-          <button
-            id="btnNewTicket"
-            class="hidden sm:inline-flex items-center gap-2 bg-motrac-red text-white px-4 py-2 rounded-lg hover:opacity-95 shadow-soft"
-            type="button"
-          >
-            <span>Servicemelding maken</span>
-          </button>
-          <div
-            id="environmentInline"
-            class="flex flex-col sm:flex-row sm:items-center sm:gap-2 px-3 py-2 bg-gray-100 rounded-lg text-xs text-gray-500"
-          >
-            <span class="uppercase tracking-wide text-[10px] text-gray-400 sm:hidden">Omgeving</span>
-            <div class="flex items-center gap-2">
-              <span class="hidden sm:inline uppercase tracking-wide text-[10px] text-gray-400">Omgeving</span>
-              <span id="environmentInlineLabel" class="text-sm font-medium text-gray-700">Beheerder</span>
-              <span class="hidden sm:inline text-gray-300">•</span>
-              <span id="environmentInlineSummary" class="hidden sm:inline text-xs text-gray-500">
-                Volledige toegang tot vloot, activiteiten en gebruikersbeheer.
-              </span>
-            </div>
-          </div>
+        <div class="flex items-center gap-3 order-3 sm:order-2 sm:flex-1 sm:justify-center">
           <button
             id="mobileMenuToggle"
-            class="sm:hidden inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm"
+            class="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 text-gray-600"
             type="button"
             aria-expanded="false"
             aria-controls="mainNav"
           >
-            <span>Menu</span>
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-              <path d="M3 6h14M3 10h14M3 14h14" stroke-linecap="round" />
+            <span class="sr-only">Menu</span>
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
             </svg>
           </button>
+          <nav
+            id="mainNav"
+            class="hidden w-full sm:flex sm:w-auto sm:items-center sm:gap-4"
+            aria-label="Hoofdmenu"
+          >
+            <ul class="flex items-center justify-center gap-2 sm:gap-3 w-full" id="mainTabs">
+              <li>
+                <button
+                  data-tab="vloot"
+                  class="tab-active inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  aria-label="Vloot"
+                  title="Vloot"
+                >
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path
+                      d="M4 6a2 2 0 012-2h8a2 2 0 012 2v5h2.586a1 1 0 01.707.293L21 14.414V17a1 1 0 01-1 1h-.382a2.25 2.25 0 11-4.486 0H9.868a2.25 2.25 0 11-4.486 0H5a1 1 0 01-1-1V6z"
+                    />
+                    <path d="M6.75 18a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                    <path d="M16.75 18a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                  </svg>
+                  <span class="sr-only">Vloot</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  data-tab="activiteit"
+                  class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  aria-label="Activiteit"
+                  title="Activiteit"
+                >
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M4 13l3.5 3.5L13 7l3.5 5L20 9" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span class="sr-only">Activiteit</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  data-tab="users"
+                  class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  aria-label="Gebruikersbeheer"
+                  title="Gebruikersbeheer"
+                >
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path d="M16 19v-1a3 3 0 00-3-3H7a3 3 0 00-3 3v1" stroke-linecap="round" stroke-linejoin="round" />
+                    <circle cx="10" cy="8" r="3" />
+                    <path d="M21 19v-1a3 3 0 00-2.4-2.94" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M15 4.14a3 3 0 010 5.72" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span class="sr-only">Gebruikersbeheer</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <div class="flex items-center gap-3 order-2 sm:order-3 sm:justify-end">
+          <div
+            id="environmentInline"
+            class="flex flex-col gap-1 text-xs sm:text-sm text-gray-600 leading-snug"
+          >
+            <span class="text-[11px] uppercase tracking-wide text-gray-400">Overzicht</span>
+            <p class="text-sm text-gray-700">
+              <span id="environmentInlineLabel" class="font-medium text-gray-800">Beheerder</span>
+              <span class="text-gray-400">–</span>
+              <span id="environmentInlineSummary" class="text-gray-600">
+                Volledige toegang tot vloot, activiteiten en gebruikersbeheer.
+              </span>
+            </p>
+          </div>
           <div class="relative">
             <button id="userBtn" class="flex items-center gap-3 px-3 py-2 bg-gray-100 rounded-lg">
               <span class="h-2 w-2 bg-green-500 rounded-full"></span>
