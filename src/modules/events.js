@@ -216,7 +216,8 @@ export function wireEvents() {
   $('#ticketCreate')?.addEventListener('click', () => {
     const id = $('#ticketTruck')?.value;
     const type = $('#ticketType')?.value;
-    const desc = $('#ticketDesc')?.value.trim();
+    const ticketDescInput = $('#ticketDesc');
+    const desc = ticketDescInput ? ticketDescInput.value.trim() : '';
     if (!id || !desc) {
       showToast('Vul minimaal truck en omschrijving in.');
       return;
@@ -283,7 +284,7 @@ export function wireEvents() {
       return;
     }
     const refInput = $('#refNew');
-    const value = refInput?.value.trim();
+    const value = refInput ? refInput.value.trim() : '';
     if (!value) {
       showToast('Referentie mag niet leeg zijn.');
       return;
@@ -298,7 +299,8 @@ export function wireEvents() {
   $('#inactiveConfirm')?.addEventListener('click', event => {
     const id = event.target.dataset.id;
     const date = $('#inactiveDate')?.value;
-    const reason = $('#inactiveReason')?.value.trim();
+    const reasonInput = $('#inactiveReason');
+    const reason = reasonInput ? reasonInput.value.trim() : '';
     if (!date || !reason) {
       showToast('Datum en reden zijn verplicht.');
       return;
