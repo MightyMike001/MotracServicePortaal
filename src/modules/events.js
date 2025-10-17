@@ -1,9 +1,10 @@
 import { FLEET, USERS } from '../data.js';
 import { state } from '../state.js';
-import { $, $$, fmtDate, showToast, openModal, closeModals, kv, formatHoursLabel } from '../utils.js';
-import { renderFleet } from './fleet.js';
-import { renderActivity } from './activity.js';
-import { renderUsers } from './users.js';
+import { $, $$, fmtDate, openModal, closeModals, kv, formatHoursLabel } from '../utils.js';
+import { showToast } from './ui/toast.js';
+import { renderFleet, updateLocationFilter } from './fleet.js';
+import { renderActivity, openActivityDetail, closeActivityDetail } from './activity.js';
+import { renderUsers, saveUser } from './users.js';
 import { openDetail, setDetailTab } from './detail.js';
 import { canViewFleetAsset } from './access.js';
 import { switchMainTab } from './tabs.js';
@@ -81,9 +82,24 @@ export function wireEvents() {
     accountRequestForm.addEventListener('submit', handleAccountRequestSubmit);
   }
 
+  const resetUserFormErrors = () => {
+    document.querySelectorAll('#modalUser .input-error').forEach(element => {
+      element.textContent = '';
+      element.classList.add('hidden');
+    });
+    ['#userName', '#userEmail', '#userLocation', '#userRole'].forEach(selector => {
+      const field = $(selector);
+      if (field) {
+        field.classList.remove('border-red-500');
+        field.removeAttribute('aria-invalid');
+      }
+    });
+  };
+
   $('#locationFilter')?.addEventListener('change', event => {
-    state.fleetFilter.location = event.target.value;
+    updateLocationFilter(event.target.value);
     renderFleet();
+    renderActivity();
   });
   const applyFleetSearch = () => {
     state.fleetFilter.query = $('#searchInput').value;
@@ -95,6 +111,18 @@ export function wireEvents() {
     if (event.key === 'Enter') {
       event.preventDefault();
       applyFleetSearch();
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const activityCard = event.target.closest('[data-activity-card]');
+    if (!activityCard) return;
+    event.preventDefault();
+    const activityId = activityCard.dataset.activityId;
+    const truckId = activityCard.dataset.truckId;
+    if (truckId && activityId) {
+      openActivityDetail(truckId, activityId);
     }
   });
 
@@ -203,9 +231,22 @@ export function wireEvents() {
     handleAccountRequestAction(requestButton);
   });
 
+  document.addEventListener('click', event => {
+    const detailTrigger = event.target.closest('[data-activity-open]');
+    if (!detailTrigger) return;
+    const activityId = detailTrigger.dataset.activityOpen;
+    const truckId = detailTrigger.dataset.truckId || detailTrigger.closest('[data-activity-card]')?.dataset.truckId;
+    if (truckId && activityId) {
+      openActivityDetail(truckId, activityId);
+    }
+  });
+
   document.querySelectorAll('.modal [data-close]').forEach(button => button.addEventListener('click', closeModals));
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeModals();
+    if (event.key === 'Escape') {
+      closeModals();
+      closeActivityDetail();
+    }
   });
 
   $('#btnNewTicket')?.addEventListener('click', () => openModal('#modalTicket'));
@@ -345,7 +386,12 @@ export function wireEvents() {
     $('#userName').value = '';
     $('#userEmail').value = '';
     $('#userPhone').value = '';
+    const locationSelect = $('#userLocation');
+    if (locationSelect && locationSelect.options.length) {
+      locationSelect.value = locationSelect.options[0].value;
+    }
     $('#userRole').value = 'Gebruiker';
+    resetUserFormErrors();
     openModal('#modalUser');
   });
 
@@ -365,7 +411,12 @@ export function wireEvents() {
       $('#userPhone').value = user.phone;
       $('#userLocation').value = user.location;
       $('#userRole').value = user.role;
+      resetUserFormErrors();
       openModal('#modalUser');
+    } else if (button.dataset.userAction === 'reset') {
+      showToast(`Wachtwoordreset aangevraagd voor ${USERS.find(item => item.id === id)?.name || 'gebruiker'}.`, {
+        variant: 'info'
+      });
     } else if (button.dataset.userAction === 'delete') {
       const index = USERS.findIndex(item => item.id === id);
       if (index > -1) {
@@ -377,28 +428,10 @@ export function wireEvents() {
   });
 
   $('#userSave')?.addEventListener('click', () => {
-    const name = $('#userName').value.trim();
-    const email = $('#userEmail').value.trim();
-    const phone = $('#userPhone').value.trim();
-    const location = $('#userLocation').value;
-    const role = $('#userRole').value;
-
-    if (!name || !email) {
-      showToast('Naam en e-mail zijn verplicht.');
-      return;
+    const success = saveUser();
+    if (success) {
+      closeModals();
     }
-
-    if (state.editUserId) {
-      const user = USERS.find(item => item.id === state.editUserId);
-      Object.assign(user, { name, email, phone, location, role });
-      showToast('Gebruiker bijgewerkt.');
-    } else {
-      USERS.push({ id: `U${Math.floor(Math.random() * 10000)}`, name, email, phone, location, role });
-      showToast('Gebruiker toegevoegd.');
-    }
-
-    closeModals();
-    renderUsers();
   });
 
   $('#usersPrev')?.addEventListener('click', () => {

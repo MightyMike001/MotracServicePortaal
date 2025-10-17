@@ -43,14 +43,6 @@ export const formatOdoValue = formatNumericValue;
 export const formatOdoHtml = formatNumericHtml;
 export const formatOdoLabel = formatNumericLabel;
 
-export function showToast(message) {
-  const toast = $('#toast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.classList.remove('hidden');
-  setTimeout(() => toast.classList.add('hidden'), 2200);
-}
-
 export function openModal(selector) {
   const el = $(selector);
   if (el) {
