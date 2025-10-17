@@ -20,6 +20,9 @@ import { renderUsers } from './users.js';
 import { applyEnvironmentForRole } from './tabs.js';
 import { setMainTab } from './navigation.js';
 
+const DEFAULT_LOGIN_EMAIL = 'test@motrac.nl';
+const DEFAULT_LOGIN_PASSWORD = 'test';
+
 function setLoginStatus(message = '') {
   const statusEl = $('#loginStatus');
   if (!statusEl) return;
@@ -58,11 +61,12 @@ export function showLoginPage() {
   setLoginFormDisabled(false);
   const emailInput = $('#loginEmail');
   if (emailInput) {
+    emailInput.value = DEFAULT_LOGIN_EMAIL;
     emailInput.focus();
   }
   const passwordInput = $('#loginPassword');
   if (passwordInput) {
-    passwordInput.value = '';
+    passwordInput.value = DEFAULT_LOGIN_PASSWORD;
   }
 }
 
