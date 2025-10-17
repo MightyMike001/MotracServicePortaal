@@ -183,6 +183,7 @@ function cloneLocations() {
 function cloneFleetItem(item) {
   return {
     ...item,
+    customer: item.customer ? { ...item.customer } : null,
     activity: Array.isArray(item.activity) ? item.activity.map(entry => ({ ...entry })) : [],
     contract: item.contract ? { ...item.contract } : null
   };

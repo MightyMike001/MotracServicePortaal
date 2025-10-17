@@ -22,6 +22,10 @@ const DEFAULT_FLEET = [
     hours: 1523,
     hoursDate: '2025-09-28',
     location: 'Demovloot Motrac – Almere',
+    customer: {
+      name: 'Motrac',
+      subLocation: 'Demovloot – Almere'
+    },
     fleetId: 'CF-DEMO',
     activity: [
       { id: 'M-1001', type: 'Onderhoud', desc: 'Periodieke servicebeurt', status: 'Afgerond', date: '2025-06-20' },
@@ -47,6 +51,10 @@ const DEFAULT_FLEET = [
     hours: 3420,
     hoursDate: '2025-09-10',
     location: 'Demovloot Motrac – Zwijndrecht',
+    customer: {
+      name: 'Motrac',
+      subLocation: 'Demovloot – Zwijndrecht'
+    },
     fleetId: 'CF-DEMO',
     activity: [],
     contract: {
@@ -69,6 +77,9 @@ const DEFAULT_FLEET = [
     hours: 801,
     hoursDate: '2025-09-30',
     location: 'Van Dijk Logistics – Rotterdam',
+    customer: {
+      name: 'Van Dijk Logistics'
+    },
     fleetId: 'CF-VANDIJK',
     activity: [
       { id: 'M-1020', type: 'Schade', desc: 'Vork beschadigd', status: 'Open', date: '2025-10-03' }
@@ -105,6 +116,18 @@ function findDefaultFleetName(fleetId) {
   return DEFAULT_CUSTOMER_FLEETS.find(fleet => fleet.id === fleetId)?.name || '—';
 }
 
+function pickString(...candidates) {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (trimmed) {
+        return trimmed;
+      }
+    }
+  }
+  return null;
+}
+
 function normaliseContract(contractLike = {}, fallbackModel = '—') {
   if (!contractLike) {
     return {
@@ -133,6 +156,77 @@ function normaliseFleetActivity(activity = []) {
     : [];
 }
 
+function normaliseFleetCustomer(item = {}) {
+  const rawCustomer =
+    item.customer ||
+    item.owner ||
+    item.customerOwner ||
+    item.customer_owner ||
+    item.customerInfo ||
+    null;
+
+  let name = null;
+  let subLocation = null;
+
+  if (rawCustomer && typeof rawCustomer === 'object' && !Array.isArray(rawCustomer)) {
+    name = pickString(
+      rawCustomer.name,
+      rawCustomer.customer,
+      rawCustomer.customerName,
+      rawCustomer.owner,
+      rawCustomer.fleet
+    );
+    subLocation = pickString(
+      rawCustomer.subLocation,
+      rawCustomer.sub_location,
+      rawCustomer.branch,
+      rawCustomer.branchName,
+      rawCustomer.branch_name,
+      rawCustomer.location,
+      rawCustomer.site
+    );
+  } else if (typeof rawCustomer === 'string') {
+    name = pickString(rawCustomer);
+  }
+
+  name =
+    pickString(
+      name,
+      item.customerName,
+      item.customer_name,
+      item.customer,
+      item.ownerName,
+      item.owner_name,
+      item.fleetCustomer,
+      item.fleet_customer
+    ) || null;
+
+  subLocation =
+    pickString(
+      subLocation,
+      item.customerSubLocation,
+      item.customer_sub_location,
+      item.subLocation,
+      item.sub_location,
+      item.branch,
+      item.branchName,
+      item.branch_name
+    ) || null;
+
+  if (!name) {
+    return null;
+  }
+
+  if (subLocation && subLocation.toLowerCase() === name.toLowerCase()) {
+    subLocation = null;
+  }
+
+  return {
+    name,
+    subLocation
+  };
+}
+
 function normaliseFleetItem(item = {}) {
   const fleetId = item.fleetId || item.customerFleetId || item.customer_fleet_id || null;
   const activity = normaliseFleetActivity(item.activity);
@@ -153,6 +247,13 @@ function normaliseFleetItem(item = {}) {
     item.odo_date ??
     null;
 
+  const customer = normaliseFleetCustomer(item);
+  const ownershipLabel = customer
+    ? customer.subLocation
+      ? `${customer.name} – ${customer.subLocation}`
+      : customer.name
+    : null;
+
   return {
     ...item,
     fleetId,
@@ -162,6 +263,8 @@ function normaliseFleetItem(item = {}) {
       item.customer_fleet_name ||
       (fleetId ? findDefaultFleetName(fleetId) : '—') ||
       '—',
+    customer,
+    ownershipLabel,
     location: item.location || item.location_name || '—',
     modelType: item.modelType || item.model_type || '—',
     hours: hoursValue,

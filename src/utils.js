@@ -68,3 +68,19 @@ export const kv = (label, value) => `
     <div class="font-medium">${value ?? '—'}</div>
   </div>
 `;
+
+export function formatCustomerOwnership(customer, fallback = '—') {
+  if (customer && typeof customer === 'object' && !Array.isArray(customer)) {
+    const name = typeof customer.name === 'string' ? customer.name.trim() : '';
+    const branch = typeof customer.subLocation === 'string' ? customer.subLocation.trim() : '';
+    if (name) {
+      return branch ? `${name} – ${branch}` : name;
+    }
+  }
+
+  if (typeof fallback === 'string' && fallback.trim() !== '') {
+    return fallback;
+  }
+
+  return '—';
+}

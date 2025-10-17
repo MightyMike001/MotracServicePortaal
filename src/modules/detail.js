@@ -1,6 +1,6 @@
 import { FLEET } from '../data.js';
 import { state } from '../state.js';
-import { $, $$, fmtDate, kv, formatHoursHtml } from '../utils.js';
+import { $, $$, fmtDate, kv, formatHoursHtml, formatCustomerOwnership } from '../utils.js';
 import { canViewFleetAsset } from './access.js';
 
 export function openDetail(id) {
@@ -31,6 +31,7 @@ export function setDetailTab(tab) {
         ${infoRow('Objectnummer', truck.id, true)}
         ${infoRow('Referentie', truck.ref, false, 'editRefFromDetail')}
         ${infoRow('Vloot', truck.fleetName || '—', true)}
+        ${infoRow('Voor', formatCustomerOwnership(truck.customer, truck.fleetName || '—'), true)}
         ${infoRow('Locatie', truck.location || '—', true)}
         ${infoRow('Modeltype', truck.modelType || '—', true)}
         ${infoRow('Model', truck.model)}
