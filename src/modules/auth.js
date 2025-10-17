@@ -260,7 +260,10 @@ function resetState() {
   state.activeEnvironmentKey = 'pending';
   state.activeTab = null;
   setMainTab(null);
-  $('#currentUserName').textContent = 'Niet ingelogd';
+  const currentUserName = $('#currentUserName');
+  if (currentUserName) {
+    currentUserName.textContent = 'Niet ingelogd';
+  }
   const userMenuName = $('#userMenuName');
   if (userMenuName) {
     userMenuName.textContent = 'Niet ingelogd';
@@ -322,7 +325,10 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
 
   const displayName =
     mergedProfile?.display_name || session.user.user_metadata?.full_name || session.user.email || 'Ingelogde gebruiker';
-  $('#currentUserName').textContent = displayName;
+  const currentUserName = $('#currentUserName');
+  if (currentUserName) {
+    currentUserName.textContent = displayName;
+  }
   const userMenuName = $('#userMenuName');
   if (userMenuName) {
     userMenuName.textContent = displayName;
