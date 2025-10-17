@@ -87,7 +87,12 @@ export async function handleLoginSubmit(event) {
   setLoginFormDisabled(true);
 
   try {
-    await signInWithPassword({ email, password });
+    const result = await signInWithPassword({ email, password });
+    const session = result?.session ?? result?.data?.session ?? null;
+
+    if (session) {
+      await handleAuthenticatedSession(session, { forceReload: true });
+    }
   } catch (error) {
     console.error('Inloggen mislukt', error);
     const message =
@@ -104,7 +109,7 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
   const currentToken = state.session?.access_token ?? null;
   const nextToken = session?.access_token ?? null;
 
-  if (!forceReload && currentToken === nextToken) {
+  if ((!forceReload || state.hasLoadedInitialData) && currentToken === nextToken) {
     return;
   }
 
