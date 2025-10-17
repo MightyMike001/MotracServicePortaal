@@ -2,8 +2,15 @@ import { FLEET, USERS } from '../data.js';
 import { state } from '../state.js';
 import { $, $$, fmtDate, openModal, closeModals, kv, formatHoursLabel } from '../utils.js';
 import { showToast } from './ui/toast.js';
-import { renderFleet, updateLocationFilter } from './fleet.js';
-import { renderActivity, openActivityDetail, closeActivityDetail } from './activity.js';
+import { renderFleet, updateLocationFilter, openBmwEditor } from './fleet.js';
+import {
+  renderActivity,
+  openActivityDetail,
+  closeActivityDetail,
+  initActivityComposer,
+  consumeTicketAttachments,
+  resetTicketAttachments
+} from './activity.js';
 import { renderUsers, saveUser } from './users.js';
 import { openDetail, setDetailTab } from './detail.js';
 import { canViewFleetAsset } from './access.js';
@@ -14,6 +21,8 @@ import { handleAccountRequestSubmit, handleAccountRequestAction } from './accoun
 export function wireEvents() {
   if (state.eventsWired) return;
   state.eventsWired = true;
+
+  initActivityComposer();
 
   function closeKebabMenus(except = null) {
     $$('.kebab-menu').forEach(menu => {
@@ -166,6 +175,7 @@ export function wireEvents() {
       if (ticketSelect) {
         ticketSelect.value = truck.id;
       }
+      resetTicketAttachments();
       openModal('#modalTicket');
       return;
     }
@@ -222,6 +232,12 @@ export function wireEvents() {
       $('#inactiveDate').valueAsDate = new Date();
       $('#inactiveConfirm').dataset.id = id;
       openModal('#modalInactive');
+      return;
+    }
+
+    if (action === 'editBmw') {
+      openBmwEditor(id);
+      return;
     }
   });
 
@@ -269,12 +285,15 @@ export function wireEvents() {
       showToast('U heeft geen toegang tot dit object.');
       return;
     }
+    const attachments = consumeTicketAttachments();
     truck.activity.push({
       id: `M-${Math.floor(1000 + Math.random() * 9000)}`,
       type,
       desc,
       status: 'Open',
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      attachments,
+      createdBy: state.profile?.display_name || state.profile?.email || 'Onbekend'
     });
     truck.openActivityCount = truck.activity.filter(activity => activity?.status === 'Open').length;
 

@@ -20,10 +20,16 @@ import { renderUsers } from './users.js';
 import { applyEnvironmentForRole } from './tabs.js';
 import { setMainTab } from './navigation.js';
 import { showToast } from './ui/toast.js';
+import { resolveEnvironment } from '../environment.js';
 
 const DEFAULT_LOGIN_EMAIL = 'test@motrac.nl';
 const DEFAULT_LOGIN_PASSWORD = 'test';
 const LOCATION_STORAGE_KEY = 'motrac:lastLocation';
+const TAB_LABELS = {
+  vloot: 'Vloot',
+  activiteit: 'Activiteit',
+  users: 'Gebruikersbeheer'
+};
 
 const TEST_ACCOUNTS = [
   {
@@ -376,7 +382,15 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
 
   applyEnvironmentForRole(mergedProfile?.role);
 
+  const environment = resolveEnvironment(mergedProfile?.role);
   const allowedTabs = Array.isArray(state.allowedTabs) ? state.allowedTabs : [];
+  if (forceReload) {
+    const readableTabs = allowedTabs.length
+      ? allowedTabs.map(tab => TAB_LABELS[tab] || tab).join(', ')
+      : 'geen modules';
+    showToast(`Ingelogd als ${environment.label}. Beschikbare onderdelen: ${readableTabs}.`);
+  }
+
   if (allowedTabs.includes('vloot')) {
     populateLocationFilters();
     renderFleet();

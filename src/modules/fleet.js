@@ -2,8 +2,13 @@ import { LOCATIONS, FLEET } from '../data.js';
 import { state } from '../state.js';
 import { $, fmtDate, formatHoursHtml, formatCustomerOwnership } from '../utils.js';
 import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
+import { showToast } from './ui/toast.js';
 
 const LOCATION_STORAGE_KEY = 'motrac:lastLocation';
+
+const BMW_STATUS_OPTIONS = ['Goedgekeurd', 'Afkeur', 'In behandeling'];
+
+let bmwModalState = { truckId: null };
 
 function persistLocationPreference(value) {
   try {
@@ -72,6 +77,138 @@ function renderTicketOptions(select, accessibleFleet) {
   select.innerHTML = activeFleet
     .map(truck => `<option value="${truck.id}">${truck.id} — ${truck.location || 'Onbekende locatie'}</option>`)
     .join('');
+}
+
+/**
+ * Finds a truck by id in the global fleet dataset.
+ */
+function findTruckById(truckId) {
+  return FLEET.find(item => item.id === truckId) || null;
+}
+
+/**
+ * Ensures the BMWT status modal exists and wires events once.
+ */
+function ensureBmwModal() {
+  let modal = document.getElementById('fleetBmwModal');
+  if (modal) {
+    return modal;
+  }
+
+  modal = document.createElement('div');
+  modal.id = 'fleetBmwModal';
+  modal.className = 'modal fixed inset-0 bg-black/40 items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">BMWT-status bijwerken</h3>
+        <button type="button" data-close aria-label="Sluiten" class="text-gray-500">✕</button>
+      </div>
+      <form class="space-y-4">
+        <div>
+          <label class="text-sm text-gray-600" for="bmwStatusSelect">Status</label>
+          <select id="bmwStatusSelect" class="mt-1 w-full border rounded-lg px-3 py-2">
+            ${BMW_STATUS_OPTIONS.map(status => `<option value="${status}">${status}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600" for="bmwExpiryInput">Vervaldatum</label>
+          <input id="bmwExpiryInput" type="date" class="mt-1 w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
+          <button type="submit" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Opslaan</button>
+        </div>
+      </form>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  const close = () => closeBmwModal();
+  modal.addEventListener('click', event => {
+    if (event.target === modal || event.target.dataset.close !== undefined) {
+      close();
+    }
+  });
+
+  modal.querySelector('form')?.addEventListener('submit', event => {
+    event.preventDefault();
+    saveBmwChanges(modal);
+  });
+
+  return modal;
+}
+
+/**
+ * Closes the BMWT modal and resets state.
+ */
+function closeBmwModal() {
+  const modal = document.getElementById('fleetBmwModal');
+  if (!modal) return;
+  modal.classList.remove('show');
+  bmwModalState = { truckId: null };
+}
+
+/**
+ * Saves updates from the BMWT modal back into the dataset.
+ */
+function saveBmwChanges(modal) {
+  const truckId = bmwModalState.truckId;
+  const truck = findTruckById(truckId);
+  if (!truck) {
+    showToast('Geen truck geselecteerd voor BMWT-bijwerking.', { variant: 'error' });
+    closeBmwModal();
+    return;
+  }
+
+  const statusSelect = modal.querySelector('#bmwStatusSelect');
+  const expiryInput = modal.querySelector('#bmwExpiryInput');
+  const status = statusSelect?.value?.trim();
+  const expiry = expiryInput?.value;
+
+  if (!status) {
+    showToast('Selecteer een geldige BMWT-status.', { variant: 'error' });
+    return;
+  }
+
+  if (!expiry) {
+    showToast('Geef een vervaldatum op.', { variant: 'error' });
+    return;
+  }
+
+  truck.bmwStatus = status;
+  truck.bmwExpiry = expiry;
+  truck.bmwUpdatedAt = new Date().toISOString();
+
+  closeBmwModal();
+  renderFleet();
+  showToast(`BMWT-status voor ${truck.id} bijgewerkt.`, { variant: 'success' });
+}
+
+/**
+ * Opens the BMWT modal for the provided truck id.
+ */
+export function openBmwEditor(truckId) {
+  const truck = findTruckById(truckId);
+  if (!truck) {
+    showToast('Truck niet gevonden voor BMWT-bewerking.', { variant: 'error' });
+    return;
+  }
+
+  const modal = ensureBmwModal();
+  const statusSelect = modal.querySelector('#bmwStatusSelect');
+  const expiryInput = modal.querySelector('#bmwExpiryInput');
+
+  if (statusSelect) {
+    statusSelect.value = BMW_STATUS_OPTIONS.includes(truck.bmwStatus) ? truck.bmwStatus : BMW_STATUS_OPTIONS[0];
+  }
+  if (expiryInput) {
+    expiryInput.value = truck.bmwExpiry ? truck.bmwExpiry.substring(0, 10) : '';
+  }
+
+  bmwModalState.truckId = truck.id;
+  modal.classList.add('show');
+  statusSelect?.focus();
 }
 
 /**
@@ -160,16 +297,17 @@ function renderRows(tableBody, entries) {
         <td class="py-3 px-3" data-label="Contract startdatum">${fmtDate(truck.contract?.start)}</td>
         <td class="py-3 px-3" data-label="Contract einddatum">${fmtDate(truck.contract?.eind)}</td>
         <td class="py-3 px-3" data-label="Openstaande meldingen">
-          <button class="inline-flex items-center justify-center w-8 h-8 rounded-full border border-red-200 bg-red-50 text-red-700 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-red-300" title="Open meldingen" data-open-detail="${truck.id}">${openCount}</button>
+          <button class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-red-600 text-white font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400" title="Open meldingen" data-open-detail="${truck.id}">${openCount}</button>
         </td>
         <td class="py-3 px-3 sm:text-right" data-label="Acties">
           <div class="relative inline-block kebab">
-            <button class="px-2 py-1 border rounded-lg" aria-haspopup="true" aria-expanded="false">⋮</button>
+            <button class="px-2 py-1 border rounded-lg" aria-haspopup="true" aria-expanded="false" aria-label="Acties voor ${truck.id}">⋮</button>
             <div class="kebab-menu hidden absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft z-10">
               <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="newTicket" data-id="${truck.id}">Melding aanmaken</button>
               <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="updateOdo" data-id="${truck.id}">Urenstand doorgeven</button>
               <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="editRef" data-id="${truck.id}">Uw referentie wijzigen</button>
               <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="showContract" data-id="${truck.id}">Contract inzien</button>
+              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="editBmw" data-id="${truck.id}">BMWT-status bewerken</button>
               <button class="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600" data-action="inactive" data-id="${truck.id}">Verwijderen uit lijst</button>
             </div>
           </div>

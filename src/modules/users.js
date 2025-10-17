@@ -2,6 +2,7 @@ import { FLEET, USERS } from '../data.js';
 import { state } from '../state.js';
 import { $ } from '../utils.js';
 import { showToast } from './ui/toast.js';
+import { canManageUsers, canApproveAccountRequests } from './access.js';
 
 const ROLE_OPTIONS = ['Beheerder', 'Gebruiker', 'Vlootbeheerder', 'Klant'];
 
@@ -315,7 +316,7 @@ export function renderAccountRequests() {
   if (!card) return;
 
   const requests = Array.isArray(state.accountRequests) ? state.accountRequests : [];
-  const canManageRequests = state.allowedTabs?.includes('users');
+  const canManageRequests = canApproveAccountRequests();
   card.classList.toggle('hidden', !canManageRequests);
   if (!canManageRequests) return;
 
@@ -353,8 +354,25 @@ export function renderUsers() {
   const pageInfo = $('#usersPageInfo');
   const prevButton = $('#usersPrev');
   const nextButton = $('#usersNext');
+  const addUserButton = $('#btnAddUser');
 
   if (!tableBody || !pageInfo || !prevButton || !nextButton) {
+    return;
+  }
+
+  const mayManageUsers = canManageUsers();
+  if (addUserButton) {
+    addUserButton.classList.toggle('hidden', !mayManageUsers);
+    addUserButton.disabled = !mayManageUsers;
+  }
+
+  if (!mayManageUsers) {
+    tableBody.innerHTML =
+      '<tr><td colspan="5" class="py-6 px-3 text-center text-gray-500">U heeft geen toegang tot gebruikersbeheer.</td></tr>';
+    pageInfo.textContent = 'Beperkte rol – gebruikersbeheer is niet beschikbaar.';
+    prevButton.disabled = true;
+    nextButton.disabled = true;
+    renderAccountRequests();
     return;
   }
 
@@ -395,6 +413,11 @@ export function renderUsers() {
  * Handles the user form submission (add or edit).
  */
 export function saveUser() {
+  if (!canManageUsers()) {
+    showToast('U heeft geen rechten om gebruikers te beheren.', { variant: 'error' });
+    return false;
+  }
+
   if (!validateUserForm()) {
     return false;
   }
