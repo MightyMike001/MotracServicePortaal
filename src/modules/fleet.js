@@ -1,6 +1,6 @@
 import { LOCATIONS, FLEET } from '../data.js';
 import { state } from '../state.js';
-import { $, fmtDate, formatHoursHtml } from '../utils.js';
+import { $, fmtDate, formatHoursHtml, formatCustomerOwnership } from '../utils.js';
 import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
 
 export function populateLocationFilters() {
@@ -65,7 +65,18 @@ function filteredFleet() {
     .filter(truck => state.fleetFilter.location === 'Alle locaties' || truck.location === state.fleetFilter.location)
     .filter(truck => {
       if (!query) return true;
-      return [truck.id, truck.ref, truck.model, truck.modelType, truck.contract?.nummer, truck.location]
+      return [
+        truck.id,
+        truck.ref,
+        truck.model,
+        truck.modelType,
+        truck.contract?.nummer,
+        truck.location,
+        truck.fleetName,
+        truck.ownershipLabel,
+        truck.customer?.name,
+        truck.customer?.subLocation
+      ]
         .map(value => (value == null ? '' : String(value)))
         .some(value => value.toLowerCase().includes(query));
     });
@@ -87,7 +98,7 @@ export function renderFleet() {
           <button class="text-left text-gray-900 hover:underline" data-open-detail="${truck.id}">
             <div class="font-medium">${truck.id}</div>
             <div class="text-xs text-gray-500">${truck.ref}</div>
-            <div class="text-xs text-gray-400">${truck.fleetName || '—'}</div>
+            <div class="text-xs text-gray-400">Voor: ${formatCustomerOwnership(truck.customer, truck.fleetName || '—')}</div>
           </button>
         </td>
         <td class="py-3 px-3" data-label="Modeltype">${truck.modelType || '—'}</td>
