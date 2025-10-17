@@ -1,7 +1,7 @@
-import { wireEvents } from './modules/events.js';
-import { initializeAuth } from './modules/auth.js';
+import { createApp } from './app.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
-  wireEvents();
-  await initializeAuth();
+const app = createApp();
+
+document.addEventListener('DOMContentLoaded', () => {
+  app.start();
 });
