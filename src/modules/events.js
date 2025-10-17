@@ -208,7 +208,7 @@ export function wireEvents() {
     if (event.key === 'Escape') closeModals();
   });
 
-  $('#btnNewTicket').addEventListener('click', () => openModal('#modalTicket'));
+  $('#btnNewTicket')?.addEventListener('click', () => openModal('#modalTicket'));
   $('#btnNewTicketMobile')?.addEventListener('click', () => {
     openModal('#modalTicket');
     collapseMobileMenu();
