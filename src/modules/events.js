@@ -243,9 +243,18 @@ export function wireEvents() {
     switchMainTab('activiteit');
     showToast('Servicemelding aangemaakt.');
 
-    $('#ticketOrder')?.value = '';
-    $('#ticketDesc')?.value = '';
-    $('#ticketPhotos')?.value = '';
+    const orderInput = $('#ticketOrder');
+    if (orderInput) {
+      orderInput.value = '';
+    }
+    const ticketDesc = $('#ticketDesc');
+    if (ticketDesc) {
+      ticketDesc.value = '';
+    }
+    const ticketPhotos = $('#ticketPhotos');
+    if (ticketPhotos) {
+      ticketPhotos.value = '';
+    }
   });
 
   $('#odoSave')?.addEventListener('click', event => {
