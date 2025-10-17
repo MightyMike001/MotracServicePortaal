@@ -40,19 +40,14 @@ export function applyEnvironmentForRole(role) {
   state.activeEnvironmentKey = environment.key;
   state.allowedTabs = [...environment.allowedTabs];
 
-  const nameEl = $('#environmentName');
-  if (nameEl) {
-    nameEl.textContent = environment.label;
+  const inlineLabelEl = $('#environmentInlineLabel');
+  if (inlineLabelEl) {
+    inlineLabelEl.textContent = environment.label;
   }
 
-  const badgeEl = $('#environmentBadge');
-  if (badgeEl) {
-    badgeEl.textContent = environment.label;
-  }
-
-  const summaryEl = $('#environmentSummary');
-  if (summaryEl) {
-    summaryEl.textContent = environment.summary;
+  const inlineSummaryEl = $('#environmentInlineSummary');
+  if (inlineSummaryEl) {
+    inlineSummaryEl.textContent = environment.summary;
   }
 
   $$('#mainTabs button').forEach(button => {
