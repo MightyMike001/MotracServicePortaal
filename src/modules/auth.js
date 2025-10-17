@@ -8,9 +8,9 @@ import {
   getCurrentSession,
   onAuthStateChange,
   signInWithPassword,
-  signOut as supabaseSignOut,
+  signOut as storageSignOut,
   touchProfileSignIn
-} from '../api/supabase.js';
+} from '../api/browserStorage.js';
 import { setFleet, setLocations, setUsers, resetToDefaults } from '../data.js';
 import { state } from '../state.js';
 import { $, showToast } from '../utils.js';
@@ -229,7 +229,7 @@ export async function initializeAuth() {
   });
 
   if (listenerError) {
-    console.error('Kon Supabase auth listener niet initialiseren', listenerError);
+    console.error('Kon lokale auth-listener niet initialiseren', listenerError);
     return;
   }
 
@@ -240,7 +240,7 @@ export async function initializeAuth() {
 
 export async function signOut() {
   try {
-    await supabaseSignOut();
+    await storageSignOut();
     showToast('Uitgelogd');
   } catch (error) {
     console.error('Uitloggen mislukt', error);
@@ -266,21 +266,21 @@ async function loadInitialData(profile) {
   if (locationsResult.status === 'fulfilled') {
     setLocations(locationsResult.value);
   } else {
-    console.error('Kon locaties niet laden vanuit Supabase.', locationsResult.reason);
+    console.error('Kon locaties niet laden vanuit browseropslag.', locationsResult.reason);
     hadError = true;
   }
 
   if (fleetResult.status === 'fulfilled') {
     setFleet(fleetResult.value);
   } else {
-    console.error('Kon vloot niet laden vanuit Supabase.', fleetResult.reason);
+    console.error('Kon vloot niet laden vanuit browseropslag.', fleetResult.reason);
     hadError = true;
   }
 
   if (usersResult.status === 'fulfilled') {
     setUsers(usersResult.value);
   } else {
-    console.error('Kon gebruikers niet laden vanuit Supabase.', usersResult.reason);
+    console.error('Kon gebruikers niet laden vanuit browseropslag.', usersResult.reason);
     hadError = true;
   }
 
@@ -296,7 +296,7 @@ async function loadInitialData(profile) {
         .forEach(fleetId => accessibleFleetIds.add(fleetId));
     }
   } else {
-    console.error('Kon vloottoegang niet laden vanuit Supabase.', membershipsResult.reason);
+    console.error('Kon vloottoegang niet laden vanuit browseropslag.', membershipsResult.reason);
     hadError = true;
   }
 
@@ -307,7 +307,7 @@ async function loadInitialData(profile) {
   } else {
     state.accountRequests = [];
     if (shouldFetchAccountRequests) {
-      console.error('Kon accountaanvragen niet laden vanuit Supabase.', accountRequestsResult.reason);
+      console.error('Kon accountaanvragen niet laden vanuit browseropslag.', accountRequestsResult.reason);
       hadError = true;
     }
   }

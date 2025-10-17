@@ -1,5 +1,7 @@
 import { LOCATIONS, FLEET, USERS } from '../data.js';
 
+const STORAGE_KEY = 'motrac-service-portal';
+
 const TEST_CREDENTIALS = {
   password: 'test',
   aliases: ['test', 'test@example.com', 'test@motrac.nl', 'test@test.nl']
@@ -17,34 +19,7 @@ const TEST_PROFILE = {
   last_sign_in_at: null
 };
 
-let currentSession = null;
-const authListeners = new Set();
-
-function cloneLocations() {
-  return [...LOCATIONS];
-}
-
-function cloneFleetItem(item) {
-  return {
-    ...item,
-    activity: Array.isArray(item.activity) ? item.activity.map(entry => ({ ...entry })) : [],
-    contract: item.contract ? { ...item.contract } : null
-  };
-}
-
-function cloneFleet() {
-  return FLEET.map(cloneFleetItem);
-}
-
-function cloneUsers() {
-  return USERS.map(user => ({ ...user }));
-}
-
-function cloneAccountRequest(request) {
-  return { ...request };
-}
-
-const accountRequests = [
+const DEFAULT_ACCOUNT_REQUESTS = [
   {
     id: 'REQ-1001',
     name: 'Sanne Willems',
@@ -107,10 +82,135 @@ const accountRequests = [
   }
 ];
 
+const authListeners = new Set();
+let storeLoaded = false;
+let memoryStore = null;
+
+function createDefaultStore() {
+  return {
+    session: null,
+    profile: { ...TEST_PROFILE },
+    accountRequests: DEFAULT_ACCOUNT_REQUESTS.map(cloneAccountRequest)
+  };
+}
+
+function ensureStore() {
+  if (!storeLoaded) {
+    loadStoreFromSessionStorage();
+    storeLoaded = true;
+  }
+
+  if (!memoryStore) {
+    memoryStore = createDefaultStore();
+  }
+
+  return memoryStore;
+}
+
+function loadStoreFromSessionStorage() {
+  if (typeof window === 'undefined' || !window.sessionStorage) {
+    memoryStore = createDefaultStore();
+    return;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      memoryStore = createDefaultStore();
+      persistStore();
+      return;
+    }
+
+    const parsed = JSON.parse(raw);
+    memoryStore = {
+      session: parsed.session ?? null,
+      profile: { ...TEST_PROFILE, ...(parsed.profile || {}) },
+      accountRequests: Array.isArray(parsed.accountRequests)
+        ? parsed.accountRequests.map(cloneAccountRequest)
+        : DEFAULT_ACCOUNT_REQUESTS.map(cloneAccountRequest)
+    };
+  } catch (error) {
+    console.warn('Kon opgeslagen browserdata niet lezen, start met standaardwaarden.', error);
+    memoryStore = createDefaultStore();
+    persistStore();
+  }
+}
+
+function persistStore() {
+  if (typeof window === 'undefined' || !window.sessionStorage) {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        session: memoryStore.session,
+        profile: memoryStore.profile,
+        accountRequests: memoryStore.accountRequests
+      })
+    );
+  } catch (error) {
+    console.warn('Kon browserdata niet opslaan.', error);
+  }
+}
+
+function cloneAccountRequest(request) {
+  return { ...request };
+}
+
+function cloneSession(session) {
+  if (!session) return null;
+  return {
+    ...session,
+    user: session.user
+      ? {
+          ...session.user,
+          user_metadata: { ...(session.user.user_metadata || {}) }
+        }
+      : null
+  };
+}
+
+function cloneProfile(profile) {
+  return profile ? { ...profile } : null;
+}
+
+function cloneLocations() {
+  return [...LOCATIONS];
+}
+
+function cloneFleetItem(item) {
+  return {
+    ...item,
+    activity: Array.isArray(item.activity) ? item.activity.map(entry => ({ ...entry })) : [],
+    contract: item.contract ? { ...item.contract } : null
+  };
+}
+
+function cloneFleet() {
+  return FLEET.map(cloneFleetItem);
+}
+
+function cloneUsers() {
+  return USERS.map(user => ({ ...user }));
+}
+
+function generateRequestId() {
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `REQ-${random}`;
+}
+
 function resolveFleetName(fleetId) {
   if (!fleetId) return null;
   const fleet = FLEET.find(item => item.fleetId === fleetId);
   return fleet?.fleetName ?? null;
+}
+
+function matchesTestCredentials(value) {
+  if (!value) return false;
+  const lowered = value.toLowerCase();
+  return TEST_CREDENTIALS.aliases.some(alias => alias.toLowerCase() === lowered);
 }
 
 function emitAuthEvent(event, session) {
@@ -123,17 +223,29 @@ function emitAuthEvent(event, session) {
   });
 }
 
-function generateRequestId() {
-  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `REQ-${random}`;
-}
-
-function findAccountRequest(id) {
-  return accountRequests.find(request => request.id === id) || null;
+function createSession() {
+  const now = new Date().toISOString();
+  const profile = ensureStore().profile;
+  profile.last_sign_in_at = now;
+  const session = {
+    access_token: 'local-session-token',
+    token_type: 'bearer',
+    expires_in: 60 * 60 * 4,
+    user: {
+      id: profile.auth_user_id,
+      email: profile.email,
+      user_metadata: {
+        full_name: profile.display_name
+      }
+    },
+    created_at: now
+  };
+  return session;
 }
 
 export async function getCurrentSession() {
-  return { session: currentSession };
+  const { session } = ensureStore();
+  return { session: cloneSession(session) };
 }
 
 export function onAuthStateChange(callback) {
@@ -155,35 +267,13 @@ export function onAuthStateChange(callback) {
   };
 }
 
-function createSession() {
-  const now = new Date().toISOString();
-  TEST_PROFILE.last_sign_in_at = now;
-  return {
-    access_token: 'local-session-token',
-    token_type: 'bearer',
-    expires_in: 60 * 60 * 4,
-    user: {
-      id: TEST_PROFILE.auth_user_id,
-      email: TEST_PROFILE.email,
-      user_metadata: {
-        full_name: TEST_PROFILE.display_name
-      }
-    },
-    created_at: now
-  };
-}
-
-function matchesTestCredentials(value) {
-  if (!value) return false;
-  const lowered = value.toLowerCase();
-  return TEST_CREDENTIALS.aliases.some(alias => alias.toLowerCase() === lowered);
-}
-
 export async function signInWithPassword({ email, password }) {
   if (matchesTestCredentials(email) && password === TEST_CREDENTIALS.password) {
-    currentSession = createSession();
-    emitAuthEvent('SIGNED_IN', currentSession);
-    return { session: currentSession, user: currentSession.user };
+    const session = createSession();
+    ensureStore().session = session;
+    persistStore();
+    emitAuthEvent('SIGNED_IN', cloneSession(session));
+    return { session: cloneSession(session), user: cloneSession(session)?.user ?? null };
   }
 
   const error = new Error('Invalid login credentials');
@@ -192,10 +282,10 @@ export async function signInWithPassword({ email, password }) {
 }
 
 export async function signOut() {
-  if (currentSession) {
-    currentSession = null;
-    emitAuthEvent('SIGNED_OUT', null);
-  }
+  const store = ensureStore();
+  store.session = null;
+  persistStore();
+  emitAuthEvent('SIGNED_OUT', null);
 }
 
 export async function fetchLocations() {
@@ -211,36 +301,39 @@ export async function fetchUsers() {
 }
 
 export async function fetchAccountRequests() {
-  return accountRequests.map(cloneAccountRequest);
+  const store = ensureStore();
+  return store.accountRequests.map(cloneAccountRequest);
 }
 
 export async function fetchProfileByAuthUserId(authUserId) {
+  const store = ensureStore();
   if (!authUserId) return null;
-  if (authUserId === TEST_PROFILE.auth_user_id) {
-    return { ...TEST_PROFILE };
+  if (authUserId === store.profile.auth_user_id) {
+    return cloneProfile(store.profile);
   }
   return null;
 }
 
 export async function touchProfileSignIn() {
-  TEST_PROFILE.last_sign_in_at = new Date().toISOString();
+  const store = ensureStore();
+  store.profile.last_sign_in_at = new Date().toISOString();
+  persistStore();
 }
 
 export async function fetchFleetMemberships(profileId) {
   if (!profileId) return [];
-  if (profileId === TEST_PROFILE.id) {
-    return [];
-  }
   return [];
 }
 
 function upsertAccountRequest(request) {
-  const existingIndex = accountRequests.findIndex(item => item.id === request.id);
+  const store = ensureStore();
+  const existingIndex = store.accountRequests.findIndex(item => item.id === request.id);
   if (existingIndex === -1) {
-    accountRequests.unshift(request);
+    store.accountRequests.unshift(request);
   } else {
-    accountRequests[existingIndex] = request;
+    store.accountRequests[existingIndex] = request;
   }
+  persistStore();
   return cloneAccountRequest(request);
 }
 
@@ -271,7 +364,8 @@ export async function createAccountRequest({ name, organisation, email, phone, r
 }
 
 export async function approveAccountRequest({ id, assignedRole, assignedFleetId, assignedByProfileId }) {
-  const existing = findAccountRequest(id);
+  const store = ensureStore();
+  const existing = store.accountRequests.find(request => request.id === id);
   if (!existing) {
     throw new Error('Accountaanvraag niet gevonden.');
   }
@@ -290,7 +384,8 @@ export async function approveAccountRequest({ id, assignedRole, assignedFleetId,
 }
 
 export async function rejectAccountRequest({ id, assignedByProfileId }) {
-  const existing = findAccountRequest(id);
+  const store = ensureStore();
+  const existing = store.accountRequests.find(request => request.id === id);
   if (!existing) {
     throw new Error('Accountaanvraag niet gevonden.');
   }
