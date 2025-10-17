@@ -2536,17 +2536,21 @@ nav.pager select {
   }
 }
 .responsive-table {
+  width: 100%;
   overflow-x: auto;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
   .responsive-table {
     overflow: visible;
-    padding: 0;
+    padding: 0 0.75rem;
+    width: min(100%, 680px);
+    margin-inline: auto;
   }
 
   .responsive-table table {
     width: 100%;
+    display: block;
     border-collapse: separate;
     border-spacing: 0;
   }
@@ -2557,27 +2561,41 @@ nav.pager select {
 
   .responsive-table tbody tr {
     display: grid;
-    gap: 0.75rem;
-    padding: 1rem 1.25rem;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin: 0 auto 1.25rem;
+    width: 100%;
   }
 
   .responsive-table tbody tr:last-child {
     border-bottom: none;
+    margin-bottom: 0;
   }
 
   .responsive-table tbody td {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.4rem;
     padding: 0;
+    text-align: left;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .responsive-table tbody td > button[data-open-detail] {
+    width: 100%;
     text-align: left;
   }
 
   .responsive-table tbody td::before {
     content: attr(data-label);
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-muted);
   }
@@ -2594,5 +2612,21 @@ nav.pager select {
     align-items: center;
     justify-content: center;
     text-align: center;
+  }
+
+  .responsive-table tbody td > *:not(button):not(.kebab) {
+    width: min(100%, 48ch);
+  }
+
+  .responsive-table tbody td .kebab {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .responsive-table tbody td .kebab-menu {
+    position: static;
+    width: 100%;
+    margin-top: 0.75rem;
   }
 }
