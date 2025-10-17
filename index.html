@@ -31,6 +31,20 @@
     }
   </script>
   <link rel="stylesheet" href="styles.css" />
+  <script>
+    (() => {
+      try {
+        const storageKey = 'motrac-theme';
+        const storedTheme = localStorage.getItem(storageKey);
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (error) {
+        console.error('Thema kan niet vooraf worden ingesteld:', error);
+      }
+    })();
+  </script>
 </head>
 <body class="bg-motrac-gray text-gray-900">
   <!-- Login Page -->
@@ -577,6 +591,11 @@
 
   <!-- Toast -->
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 hidden bg-gray-900 text-white px-4 py-2 rounded-lg shadow-soft"></div>
+
+  <button id="themeToggle" class="theme-toggle" type="button" aria-label="Schakel naar donker thema">
+    <span class="theme-toggle__icon" aria-hidden="true">🌞</span>
+    <span class="theme-toggle__label">Donker thema</span>
+  </button>
 
   <script type="module" src="src/main.js"></script>
 </body>

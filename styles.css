@@ -297,6 +297,46 @@ h4 {
   white-space: nowrap;
 }
 
+:root[data-theme="dark"] body {
+  background: var(--color-background) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme="dark"] .bg-white,
+:root[data-theme="dark"] .bg-gray-50,
+:root[data-theme="dark"] .bg-gray-100,
+:root[data-theme="dark"] .bg-motrac-gray,
+:root[data-theme="dark"] .bg-slate-50 {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}
+
+:root[data-theme="dark"] .text-gray-900,
+:root[data-theme="dark"] .text-gray-800,
+:root[data-theme="dark"] .text-gray-700 {
+  color: var(--color-text) !important;
+}
+
+:root[data-theme="dark"] .text-gray-600,
+:root[data-theme="dark"] .text-gray-500,
+:root[data-theme="dark"] .text-gray-400,
+:root[data-theme="dark"] .text-gray-300 {
+  color: var(--color-muted) !important;
+}
+
+:root[data-theme="dark"] .border-gray-100,
+:root[data-theme="dark"] .border-gray-200,
+:root[data-theme="dark"] .border-gray-300,
+:root[data-theme="dark"] .border-gray-400,
+:root[data-theme="dark"] .border-gray-700,
+:root[data-theme="dark"] .border-motrac-gray {
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme="dark"] .shadow-soft {
+  box-shadow: var(--shadow-md) !important;
+}
+
 @media (max-width: 600px) {
   .theme-toggle {
     right: 16px;
