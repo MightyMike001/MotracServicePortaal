@@ -7,7 +7,7 @@ import {
   createAccountRequest,
   approveAccountRequest,
   rejectAccountRequest
-} from '../api/supabase.js';
+} from '../api/browserStorage.js';
 
 export async function handleAccountRequestSubmit(event) {
   event.preventDefault();
