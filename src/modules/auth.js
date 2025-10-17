@@ -78,8 +78,10 @@ export function showAppShell() {
 export async function handleLoginSubmit(event) {
   event.preventDefault();
 
-  const email = $('#loginEmail')?.value.trim();
-  const password = $('#loginPassword')?.value;
+  const emailInput = $('#loginEmail');
+  const passwordInput = $('#loginPassword');
+  const email = emailInput ? emailInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value : '';
 
   if (!email || !password) {
     setLoginError('Vul zowel e-mailadres als wachtwoord in.');

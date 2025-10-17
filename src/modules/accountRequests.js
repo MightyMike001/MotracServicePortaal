@@ -12,11 +12,17 @@ import {
 export async function handleAccountRequestSubmit(event) {
   event.preventDefault();
 
-  const name = $('#requestName')?.value.trim();
-  const organisation = $('#requestOrganisation')?.value.trim();
-  const email = $('#requestEmail')?.value.trim();
-  const phone = $('#requestPhone')?.value.trim();
-  const requestNotes = $('#requestNotes')?.value.trim();
+  const nameInput = $('#requestName');
+  const organisationInput = $('#requestOrganisation');
+  const emailInput = $('#requestEmail');
+  const phoneInput = $('#requestPhone');
+  const notesInput = $('#requestNotes');
+
+  const name = nameInput ? nameInput.value.trim() : '';
+  const organisation = organisationInput ? organisationInput.value.trim() : '';
+  const email = emailInput ? emailInput.value.trim() : '';
+  const phone = phoneInput ? phoneInput.value.trim() : '';
+  const requestNotes = notesInput ? notesInput.value.trim() : '';
 
   if (!name || !organisation || !email) {
     showToast('Naam, organisatie en e-mailadres zijn verplicht.');
