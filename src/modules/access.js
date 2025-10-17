@@ -1,14 +1,23 @@
 import { state } from '../state.js';
 
+/**
+ * Resolves the active role from the authenticated profile.
+ */
 function getRole() {
   return state.profile?.role ?? null;
 }
 
+/**
+ * Returns the set with allowed fleet ids for restricted roles.
+ */
 function getAllowedFleetIds() {
   const allowed = state.accessibleFleetIds;
   return allowed instanceof Set ? allowed : null;
 }
 
+/**
+ * Checks whether the current user may view a specific fleet asset.
+ */
 export function canViewFleetAsset(truck) {
   if (!truck) return false;
   const role = getRole();
@@ -21,12 +30,7 @@ export function canViewFleetAsset(truck) {
   }
 
   const allowed = getAllowedFleetIds();
-  if (!allowed) {
-    // If we have no allow-list for restricted roles we consider the asset hidden.
-    return role !== 'Klant';
-  }
-
-  if (allowed.size === 0) {
+  if (!allowed || allowed.size === 0) {
     return false;
   }
 
@@ -37,10 +41,16 @@ export function canViewFleetAsset(truck) {
   return allowed.has(truck.fleetId);
 }
 
+/**
+ * Filters the fleet array so that only accessible entries remain.
+ */
 export function filterFleetByAccess(fleet = []) {
   return fleet.filter(truck => canViewFleetAsset(truck));
 }
 
+/**
+ * Ensures the currently selected location remains accessible after updates.
+ */
 export function ensureAccessibleLocation(currentLocation, availableLocations = []) {
   if (!availableLocations.length) {
     return 'Alle locaties';

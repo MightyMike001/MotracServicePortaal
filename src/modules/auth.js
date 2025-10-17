@@ -13,16 +13,67 @@ import {
 } from '../api/browserStorage.js';
 import { setFleet, setLocations, setUsers, resetToDefaults } from '../data.js';
 import { state } from '../state.js';
-import { $, showToast } from '../utils.js';
-import { populateLocationFilters, renderFleet } from './fleet.js';
+import { $ } from '../utils.js';
+import { populateLocationFilters, renderFleet, setFleetLoading } from './fleet.js';
 import { renderActivity } from './activity.js';
 import { renderUsers } from './users.js';
 import { applyEnvironmentForRole } from './tabs.js';
 import { setMainTab } from './navigation.js';
+import { showToast } from './ui/toast.js';
 
 const DEFAULT_LOGIN_EMAIL = 'test@motrac.nl';
 const DEFAULT_LOGIN_PASSWORD = 'test';
+const LOCATION_STORAGE_KEY = 'motrac:lastLocation';
 
+const TEST_ACCOUNTS = [
+  {
+    email: 'test@motrac.nl',
+    role: 'Beheerder',
+    displayName: 'Testbeheerder',
+    fleetIds: null,
+    defaultLocation: 'Alle locaties'
+  },
+  {
+    email: 'gebruiker@motrac.nl',
+    role: 'Gebruiker',
+    displayName: 'Interne gebruiker',
+    fleetIds: null,
+    defaultLocation: 'Alle locaties'
+  },
+  {
+    email: 'vloot@motrac.nl',
+    role: 'Vlootbeheerder',
+    displayName: 'Vlootbeheer',
+    fleetIds: ['CF-DEMO'],
+    defaultLocation: 'Demovloot Motrac – Almere'
+  },
+  {
+    email: 'klant@motrac.nl',
+    role: 'Klant',
+    displayName: 'Van Dijk Logistics',
+    fleetIds: ['CF-VANDIJK'],
+    defaultLocation: 'Van Dijk Logistics – Rotterdam'
+  }
+];
+
+/**
+ * Normalises e-mail input to ensure case-insensitive matching.
+ */
+function normaliseEmail(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+/**
+ * Looks up the configured prototype account for the supplied email address.
+ */
+function findAccountByEmail(email) {
+  const normalised = normaliseEmail(email);
+  return TEST_ACCOUNTS.find(account => normaliseEmail(account.email) === normalised) || null;
+}
+
+/**
+ * Updates the UI status label under the login form.
+ */
 function setLoginStatus(message = '') {
   const statusEl = $('#loginStatus');
   if (!statusEl) return;
@@ -30,6 +81,9 @@ function setLoginStatus(message = '') {
   statusEl.classList.toggle('hidden', !message);
 }
 
+/**
+ * Shows an inline validation message below the login form.
+ */
 function setLoginError(message = '') {
   const errorEl = $('#loginError');
   if (!errorEl) return;
@@ -37,6 +91,9 @@ function setLoginError(message = '') {
   errorEl.classList.toggle('hidden', !message);
 }
 
+/**
+ * Enables or disables the login form controls during async work.
+ */
 function setLoginFormDisabled(disabled) {
   const controls = ['#loginEmail', '#loginPassword', '#loginSubmit'].map(selector => $(selector));
   controls.forEach(control => {
@@ -53,6 +110,9 @@ function setLoginFormDisabled(disabled) {
   }
 }
 
+/**
+ * Resets the app state and shows the login screen.
+ */
 export function showLoginPage() {
   $('#loginPage')?.classList.remove('hidden');
   $('#app')?.classList.add('hidden');
@@ -70,11 +130,17 @@ export function showLoginPage() {
   }
 }
 
+/**
+ * Reveals the application shell after a successful login.
+ */
 export function showAppShell() {
   $('#app')?.classList.remove('hidden');
   $('#loginPage')?.classList.add('hidden');
 }
 
+/**
+ * Handles submission of the login form and validates credentials and role.
+ */
 export async function handleLoginSubmit(event) {
   event.preventDefault();
 
@@ -88,6 +154,12 @@ export async function handleLoginSubmit(event) {
     return;
   }
 
+  const account = findAccountByEmail(email);
+  if (!account) {
+    setLoginError('Dit e-mailadres heeft geen toegang tot het portaal.');
+    return;
+  }
+
   setLoginError('');
   setLoginStatus('Bezig met inloggen…');
   setLoginFormDisabled(true);
@@ -96,9 +168,11 @@ export async function handleLoginSubmit(event) {
     const result = await signInWithPassword({ email, password });
     const session = result?.session ?? result?.data?.session ?? null;
 
-    if (session) {
-      await handleAuthenticatedSession(session, { forceReload: true });
+    if (!session) {
+      throw new Error('SessionMissing');
     }
+
+    await handleAuthenticatedSession(session, { forceReload: true });
   } catch (error) {
     console.error('Inloggen mislukt', error);
     const message =
@@ -111,6 +185,96 @@ export async function handleLoginSubmit(event) {
   }
 }
 
+/**
+ * Returns the stored location preference from localStorage.
+ */
+function getStoredLocationPreference() {
+  try {
+    return localStorage.getItem(LOCATION_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Kon locatievoorkeur niet lezen.', error);
+    return null;
+  }
+}
+
+/**
+ * Stores the preferred location so it can be restored on next login.
+ */
+function setStoredLocationPreference(location) {
+  try {
+    if (location) {
+      localStorage.setItem(LOCATION_STORAGE_KEY, location);
+    } else {
+      localStorage.removeItem(LOCATION_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.warn('Kon locatievoorkeur niet opslaan.', error);
+  }
+}
+
+/**
+ * Merges the Supabase profile with the prototype persona information.
+ */
+function mergeProfileWithAccount(profile, session) {
+  const account = findAccountByEmail(profile?.email || session?.user?.email);
+  if (!account) {
+    return { profile, account: null, fleetAccess: null };
+  }
+
+  const mergedProfile = {
+    ...(profile || {}),
+    email: account.email,
+    display_name: account.displayName || profile?.display_name || account.email,
+    role: account.role,
+    default_location_name: account.defaultLocation || profile?.default_location_name || 'Alle locaties'
+  };
+
+  const fleetAccess = Array.isArray(account.fleetIds) ? new Set(account.fleetIds) : null;
+
+  return {
+    profile: mergedProfile,
+    account,
+    fleetAccess
+  };
+}
+
+/**
+ * Ensures the state is reset when there is no active session.
+ */
+function resetState() {
+  state.session = null;
+  state.profile = null;
+  state.accountContext = null;
+  state.hasLoadedInitialData = false;
+  state.accessibleFleetIds = null;
+  resetToDefaults();
+  state.fleetFilter.location = 'Alle locaties';
+  state.fleetFilter.query = '';
+  state.activityFilter.status = 'all';
+  state.selectedTruckId = null;
+  state.usersPage = 1;
+  state.usersPageSize = 10;
+  state.usersSearchQuery = '';
+  state.editUserId = null;
+  state.allowedTabs = [];
+  state.activeEnvironmentKey = 'pending';
+  state.activeTab = null;
+  setMainTab(null);
+  $('#currentUserName').textContent = 'Niet ingelogd';
+  const userMenuName = $('#userMenuName');
+  if (userMenuName) {
+    userMenuName.textContent = 'Niet ingelogd';
+  }
+  const userMenuEmail = $('#userMenuEmail');
+  if (userMenuEmail) {
+    userMenuEmail.textContent = '';
+  }
+  showLoginPage();
+}
+
+/**
+ * Applies persona information and loads data when the session changes.
+ */
 export async function handleAuthenticatedSession(session, { forceReload = false } = {}) {
   const currentToken = state.session?.access_token ?? null;
   const nextToken = session?.access_token ?? null;
@@ -122,30 +286,7 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
   state.session = session;
 
   if (!session) {
-    state.profile = null;
-    state.hasLoadedInitialData = false;
-    state.accessibleFleetIds = null;
-    resetToDefaults();
-    state.fleetFilter.location = 'Alle locaties';
-    state.fleetFilter.query = '';
-    state.selectedTruckId = null;
-    state.usersPage = 1;
-    state.usersPageSize = 10;
-    state.editUserId = null;
-    state.allowedTabs = [];
-    state.activeEnvironmentKey = 'pending';
-    state.activeTab = null;
-    setMainTab(null);
-    $('#currentUserName').textContent = 'Niet ingelogd';
-    const userMenuName = $('#userMenuName');
-    if (userMenuName) {
-      userMenuName.textContent = 'Niet ingelogd';
-    }
-    const userMenuEmail = $('#userMenuEmail');
-    if (userMenuEmail) {
-      userMenuEmail.textContent = '';
-    }
-    showLoginPage();
+    resetState();
     return;
   }
 
@@ -162,10 +303,25 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
     }
   }
 
-  state.profile = profile ?? null;
+  const { profile: mergedProfile, account, fleetAccess } = mergeProfileWithAccount(profile, session);
+  if (!account) {
+    setLoginError('Uw account is niet geconfigureerd voor dit prototype.');
+    showToast('Account niet herkend. Neem contact op met Motrac.', { variant: 'error' });
+    try {
+      await storageSignOut();
+    } catch (signOutError) {
+      console.warn('Kon sessie niet sluiten voor onbekend account.', signOutError);
+    }
+    resetState();
+    return;
+  }
+
+  state.profile = mergedProfile ?? null;
+  state.accountContext = account;
+  state.accessibleFleetIds = fleetAccess;
 
   const displayName =
-    profile?.display_name || session.user.user_metadata?.full_name || session.user.email || 'Ingelogde gebruiker';
+    mergedProfile?.display_name || session.user.user_metadata?.full_name || session.user.email || 'Ingelogde gebruiker';
   $('#currentUserName').textContent = displayName;
   const userMenuName = $('#userMenuName');
   if (userMenuName) {
@@ -173,7 +329,7 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
   }
   const userMenuEmail = $('#userMenuEmail');
   if (userMenuEmail) {
-    userMenuEmail.textContent = profile?.email || session.user.email || '';
+    userMenuEmail.textContent = mergedProfile?.email || session.user.email || '';
   }
 
   if (forceReload) {
@@ -187,22 +343,44 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
   const shouldReloadData = forceReload || !state.hasLoadedInitialData;
   if (shouldReloadData) {
     try {
-      await loadInitialData(profile);
+      setFleetLoading(true);
+      await loadInitialData(mergedProfile, fleetAccess);
     } catch (error) {
       console.error('Kon data niet laden', error);
       setLoginError('Er ging iets mis bij het laden van de gegevens. Probeer het later opnieuw.');
       setLoginStatus('');
       setLoginFormDisabled(false);
+      setFleetLoading(false);
       return;
     }
   }
 
-  populateLocationFilters();
-  renderFleet();
-  renderActivity();
-  renderUsers();
-  state.activeTab = 'vloot';
-  applyEnvironmentForRole(profile?.role);
+  setFleetLoading(false);
+
+  const storedLocation = getStoredLocationPreference();
+  if (storedLocation) {
+    state.fleetFilter.location = storedLocation;
+  } else if (account?.defaultLocation) {
+    state.fleetFilter.location = account.defaultLocation;
+  }
+
+  if (!state.activeTab) {
+    state.activeTab = 'vloot';
+  }
+
+  applyEnvironmentForRole(mergedProfile?.role);
+
+  const allowedTabs = Array.isArray(state.allowedTabs) ? state.allowedTabs : [];
+  if (allowedTabs.includes('vloot')) {
+    populateLocationFilters();
+    renderFleet();
+  }
+  if (allowedTabs.includes('activiteit')) {
+    renderActivity();
+  }
+  if (allowedTabs.includes('users')) {
+    renderUsers();
+  }
 
   showAppShell();
   setLoginStatus('');
@@ -214,6 +392,9 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
   }
 }
 
+/**
+ * Initialises authentication listeners on application start.
+ */
 export async function initializeAuth() {
   try {
     const { session } = await getCurrentSession();
@@ -238,17 +419,25 @@ export async function initializeAuth() {
   });
 }
 
+/**
+ * Signs the user out and resets the local state.
+ */
 export async function signOut() {
   try {
     await storageSignOut();
     showToast('Uitgelogd');
   } catch (error) {
     console.error('Uitloggen mislukt', error);
-    showToast('Uitloggen mislukt. Probeer opnieuw.');
+    showToast('Uitloggen mislukt. Probeer opnieuw.', { variant: 'error' });
+  } finally {
+    resetState();
   }
 }
 
-async function loadInitialData(profile) {
+/**
+ * Persists initial datasets for the active persona and resolves fleet access.
+ */
+async function loadInitialData(profile, fleetAccess) {
   const role = profile?.role ?? null;
   const membershipsPromise = profile?.id ? fetchFleetMemberships(profile.id) : Promise.resolve([]);
   const shouldFetchAccountRequests = role === 'Beheerder';
@@ -287,9 +476,13 @@ async function loadInitialData(profile) {
   const unrestricted = role === 'Beheerder' || role === 'Gebruiker';
   let accessibleFleetIds = unrestricted ? null : new Set();
 
+  if (fleetAccess instanceof Set) {
+    accessibleFleetIds = fleetAccess;
+  }
+
   if (membershipsResult.status === 'fulfilled') {
     const memberships = membershipsResult.value || [];
-    if (!unrestricted) {
+    if (!unrestricted && accessibleFleetIds instanceof Set) {
       memberships
         .map(item => item?.fleetId)
         .filter(Boolean)
@@ -313,8 +506,9 @@ async function loadInitialData(profile) {
   }
 
   if (hadError) {
-    showToast('Live data niet beschikbaar – voorbeelddata worden gebruikt.');
+    showToast('Live data niet beschikbaar – voorbeelddata worden gebruikt.', { variant: 'warning' });
   }
 
+  setStoredLocationPreference(state.fleetFilter.location);
   state.hasLoadedInitialData = true;
 }

@@ -1,6 +1,7 @@
 import { USERS } from '../data.js';
 import { state } from '../state.js';
-import { $, showToast, closeModals } from '../utils.js';
+import { $, closeModals } from '../utils.js';
+import { showToast } from './ui/toast.js';
 import { renderAccountRequests, renderUsers } from './users.js';
 import { getFleetSummaryById } from './tabs.js';
 import {

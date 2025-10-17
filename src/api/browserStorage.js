@@ -4,7 +4,15 @@ const STORAGE_KEY = 'motrac-service-portal';
 
 const TEST_CREDENTIALS = {
   password: 'test',
-  aliases: ['test', 'test@example.com', 'test@motrac.nl', 'test@test.nl']
+  aliases: [
+    'test',
+    'test@example.com',
+    'test@motrac.nl',
+    'test@test.nl',
+    'gebruiker@motrac.nl',
+    'vloot@motrac.nl',
+    'klant@motrac.nl'
+  ]
 };
 
 const TEST_PROFILE = {
