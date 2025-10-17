@@ -2,7 +2,7 @@ import { LOCATIONS, FLEET, USERS } from '../data.js';
 
 const TEST_CREDENTIALS = {
   password: 'test',
-  aliases: ['test', 'test@example.com', 'test@motrac.nl']
+  aliases: ['test', 'test@example.com', 'test@motrac.nl', 'test@test.nl']
 };
 
 const TEST_PROFILE = {
