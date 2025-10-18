@@ -8,6 +8,7 @@ import {
   getCurrentSession,
   onAuthStateChange,
   signInWithPassword,
+  signInWithPersona,
   signOut as storageSignOut,
   touchProfileSignIn
 } from '../api/browserStorage.js';
@@ -122,6 +123,15 @@ function setLoginFormDisabled(disabled) {
     }
   });
 
+  document.querySelectorAll('[data-persona-login]').forEach(button => {
+    button.disabled = disabled;
+    if (disabled) {
+      button.setAttribute('aria-disabled', 'true');
+    } else {
+      button.removeAttribute('aria-disabled');
+    }
+  });
+
   const loginForm = $('#loginForm');
   if (loginForm) {
     loginForm.setAttribute('aria-busy', disabled ? 'true' : 'false');
@@ -204,6 +214,55 @@ export async function handleLoginSubmit(event) {
       error?.message === 'Invalid login credentials'
         ? 'Onjuiste inloggegevens. Controleer e-mailadres en wachtwoord.'
         : 'Inloggen mislukt. Probeer het opnieuw.';
+    setLoginError(message);
+    showToast(message, { variant: 'error' });
+    setLoginStatus('');
+    setLoginFormDisabled(false);
+  }
+}
+
+export async function handlePersonaLogin(event) {
+  event?.preventDefault?.();
+
+  const trigger = event?.currentTarget || event?.target?.closest?.('[data-persona-login]');
+  const personaEmail = trigger?.dataset?.email || trigger?.dataset?.personaEmail || '';
+  if (!personaEmail) {
+    return;
+  }
+
+  const account = findAccountByEmail(personaEmail);
+  if (!account) {
+    const message = 'Deze demo-gebruiker is niet beschikbaar.';
+    setLoginError(message);
+    showToast(message, { variant: 'error' });
+    return;
+  }
+
+  const emailInput = $('#loginEmail');
+  if (emailInput) {
+    emailInput.value = account.email;
+  }
+  const passwordInput = $('#loginPassword');
+  if (passwordInput) {
+    passwordInput.value = DEFAULT_LOGIN_PASSWORD;
+  }
+
+  setLoginError('');
+  setLoginStatus(`Inloggen als ${account.displayName || account.email}…`);
+  setLoginFormDisabled(true);
+
+  try {
+    const result = await signInWithPersona(account.email);
+    const session = result?.session ?? result?.data?.session ?? null;
+
+    if (!session) {
+      throw new Error('SessionMissing');
+    }
+
+    await handleAuthenticatedSession(session, { forceReload: true });
+  } catch (error) {
+    console.error('Snelle login mislukt', error);
+    const message = 'Kon niet inloggen met deze demo-gebruiker.';
     setLoginError(message);
     showToast(message, { variant: 'error' });
     setLoginStatus('');
