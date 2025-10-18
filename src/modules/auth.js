@@ -31,6 +31,9 @@ const TAB_LABELS = {
   users: 'Gebruikersbeheer'
 };
 
+/**
+ * Hard-coded personas that simulate the available roles within the prototype.
+ */
 const TEST_ACCOUNTS = [
   {
     email: 'test@motrac.nl',
@@ -85,6 +88,13 @@ function setLoginStatus(message = '') {
   if (!statusEl) return;
   statusEl.textContent = message;
   statusEl.classList.toggle('hidden', !message);
+  if (message) {
+    statusEl.setAttribute('role', 'status');
+    statusEl.setAttribute('aria-live', 'polite');
+  } else {
+    statusEl.removeAttribute('role');
+    statusEl.removeAttribute('aria-live');
+  }
 }
 
 /**
@@ -107,6 +117,11 @@ function setLoginFormDisabled(disabled) {
       control.disabled = disabled;
     }
   });
+
+  const loginForm = $('#loginForm');
+  if (loginForm) {
+    loginForm.setAttribute('aria-busy', disabled ? 'true' : 'false');
+  }
 
   const defaultLabel = $('#loginSubmitDefault');
   const loadingLabel = $('#loginSubmitLoading');
@@ -186,6 +201,7 @@ export async function handleLoginSubmit(event) {
         ? 'Onjuiste inloggegevens. Controleer e-mailadres en wachtwoord.'
         : 'Inloggen mislukt. Probeer het opnieuw.';
     setLoginError(message);
+    showToast(message, { variant: 'error' });
     setLoginStatus('');
     setLoginFormDisabled(false);
   }

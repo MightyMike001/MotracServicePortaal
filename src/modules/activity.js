@@ -26,6 +26,9 @@ const STATUS_PROGRESS = {
 
 const PREVIEW_LIST_ID = 'ticketAttachmentPreview';
 
+/**
+ * Ensures the status select element exists and wires the change event.
+ */
 function ensureStatusFilter() {
   let statusFilter = $('#activityStatusFilter');
   if (statusFilter) {
@@ -440,6 +443,8 @@ export function renderActivity() {
   populateStatusFilter();
   ensureTicketComposer();
 
+  fadeActivityList(container);
+
   const query = searchInput.value.trim().toLowerCase();
   const location = locationFilter.value;
   const items = [];
@@ -471,6 +476,17 @@ export function renderActivity() {
     .join('');
 
   $('#activityEmpty')?.classList.toggle('hidden', items.length !== 0);
+}
+
+/**
+ * Adds a short fade animation to smooth the activity list transition.
+ */
+function fadeActivityList(container) {
+  container.style.transition = 'opacity 220ms ease';
+  container.style.opacity = '0';
+  requestAnimationFrame(() => {
+    container.style.opacity = '1';
+  });
 }
 
 /**
