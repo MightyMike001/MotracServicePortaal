@@ -1,5 +1,8 @@
 import { state } from '../state.js';
 
+/**
+ * Declarative permission matrix describing what each persona may perform.
+ */
 const ROLE_PERMISSIONS = {
   Beheerder: { canManageUsers: true, canApproveRequests: true },
   Gebruiker: { canManageUsers: false, canApproveRequests: false },

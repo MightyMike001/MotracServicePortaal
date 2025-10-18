@@ -10,6 +10,9 @@ const BMW_STATUS_OPTIONS = ['Goedgekeurd', 'Afkeur', 'In behandeling'];
 
 let bmwModalState = { truckId: null };
 
+/**
+ * Stores the location filter preference so it persists across sessions.
+ */
 function persistLocationPreference(value) {
   try {
     if (value) {
@@ -22,6 +25,9 @@ function persistLocationPreference(value) {
   }
 }
 
+/**
+ * Reads the cached location preference from localStorage.
+ */
 function getLocationPreference() {
   try {
     return localStorage.getItem(LOCATION_STORAGE_KEY);
@@ -31,6 +37,9 @@ function getLocationPreference() {
   }
 }
 
+/**
+ * Returns the unique location names that exist within the accessible fleet set.
+ */
 function getAccessibleLocations(accessibleFleet) {
   return new Set(
     accessibleFleet
@@ -39,6 +48,9 @@ function getAccessibleLocations(accessibleFleet) {
   );
 }
 
+/**
+ * Builds the dropdown options for the location filter based on access rules.
+ */
 function getLocationOptions(accessibleFleet) {
   const baseLocations = Array.isArray(LOCATIONS) && LOCATIONS.length ? LOCATIONS : ['Alle locaties'];
   const accessibleSet = getAccessibleLocations(accessibleFleet);
@@ -52,6 +64,9 @@ function getLocationOptions(accessibleFleet) {
   return allowed.length ? allowed : baseLocations;
 }
 
+/**
+ * Ensures the stored location filter is valid for the current role.
+ */
 function resolveFilterLocation(allowedLocations) {
   const stored = getLocationPreference();
   const desired = stored || state.fleetFilter.location;
@@ -61,6 +76,9 @@ function resolveFilterLocation(allowedLocations) {
   return resolved;
 }
 
+/**
+ * Populates a select element with the provided options.
+ */
 function renderSelectOptions(select, options, selectedValue) {
   if (!select) return;
   select.innerHTML = options
@@ -71,6 +89,9 @@ function renderSelectOptions(select, options, selectedValue) {
   }
 }
 
+/**
+ * Populates the ticket creation dropdown with trucks the user may select.
+ */
 function renderTicketOptions(select, accessibleFleet) {
   if (!select) return;
   const activeFleet = accessibleFleet.filter(truck => truck?.active);
@@ -271,6 +292,9 @@ function renderEmptyState(tableBody) {
     '<tr><td colspan="12" class="py-6 px-3 text-center text-gray-500">Geen resultaten binnen het huidige filter.</td></tr>';
 }
 
+/**
+ * Renders the table rows for the provided fleet entries.
+ */
 function renderRows(tableBody, entries) {
   const rows = entries.map(truck => {
     const activityList = Array.isArray(truck.activity) ? truck.activity : [];
@@ -297,7 +321,7 @@ function renderRows(tableBody, entries) {
         <td class="py-3 px-3" data-label="Contract startdatum">${fmtDate(truck.contract?.start)}</td>
         <td class="py-3 px-3" data-label="Contract einddatum">${fmtDate(truck.contract?.eind)}</td>
         <td class="py-3 px-3" data-label="Openstaande meldingen">
-          <button class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-red-600 text-white font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400" title="Open meldingen" data-open-detail="${truck.id}">${openCount}</button>
+          <button class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-red-700 text-white font-semibold shadow-sm border border-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" title="Open meldingen" data-open-detail="${truck.id}">${openCount}</button>
         </td>
         <td class="py-3 px-3 sm:text-right" data-label="Acties">
           <div class="relative inline-block kebab">
@@ -316,8 +340,12 @@ function renderRows(tableBody, entries) {
   });
 
   tableBody.innerHTML = rows.join('');
+  animateTableBody(tableBody);
 }
 
+/**
+ * Returns the shared loading overlay for the fleet table and creates it lazily.
+ */
 function getLoadingOverlay() {
   let overlay = document.querySelector('#fleetLoadingOverlay');
   if (!overlay) {
@@ -352,6 +380,18 @@ export function setFleetLoading(isLoading) {
 }
 
 /**
+ * Adds a fade animation after the table content changes to soften transitions.
+ */
+function animateTableBody(tableBody) {
+  if (!tableBody) return;
+  tableBody.style.transition = 'opacity 220ms ease';
+  tableBody.style.opacity = '0';
+  requestAnimationFrame(() => {
+    tableBody.style.opacity = '1';
+  });
+}
+
+/**
  * Renders the fleet table according to the active filters and access rules.
  */
 export function renderFleet() {
@@ -361,6 +401,7 @@ export function renderFleet() {
   const entries = filteredFleet();
   if (!entries.length) {
     renderEmptyState(tableBody);
+    animateTableBody(tableBody);
     return;
   }
 

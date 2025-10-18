@@ -18,6 +18,9 @@ function formatDateTime(value) {
   return dateFormatter.format(date);
 }
 
+/**
+ * Aggregates fleet data so pending account requests can be assigned easily.
+ */
 function getFleetSummaries() {
   const map = new Map();
   FLEET.forEach(item => {
@@ -43,6 +46,9 @@ function getFleetSummaries() {
     .sort((a, b) => a.name.localeCompare(b.name, 'nl-NL'));
 }
 
+/**
+ * Renders the historical account requests beneath the management panel.
+ */
 function renderHistory(historyEl, resolvedRequests = []) {
   if (!historyEl) return;
   historyEl.innerHTML = resolvedRequests
@@ -66,6 +72,9 @@ function renderHistory(historyEl, resolvedRequests = []) {
     .join('');
 }
 
+/**
+ * Builds the list of pending account requests including assignment controls.
+ */
 function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
   if (!listEl) return;
 
@@ -145,6 +154,9 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
     .join('');
 }
 
+/**
+ * Ensures the search inputs above the users table exist and stay in sync.
+ */
 function ensureSearchControls() {
   let input = $('#usersSearch');
   if (!input) {
@@ -198,6 +210,9 @@ function ensureSearchControls() {
   return input;
 }
 
+/**
+ * Filters the in-memory user dataset using the active search query.
+ */
 function filterUsers() {
   const query = (state.usersSearchQuery || '').trim().toLowerCase();
   if (!query) {
@@ -210,6 +225,9 @@ function filterUsers() {
   });
 }
 
+/**
+ * Updates the pagination summary text underneath the users table.
+ */
 function setPageInfo(pageInfoEl, currentPage, totalPages, totalItems, pageItems) {
   if (!pageInfoEl) return;
   if (!totalItems) {
@@ -221,6 +239,9 @@ function setPageInfo(pageInfoEl, currentPage, totalPages, totalItems, pageItems)
   pageInfoEl.textContent = `Pagina ${currentPage} van ${totalPages} • ${start}–${end} van ${totalItems} gebruikers`;
 }
 
+/**
+ * Displays or hides inline validation feedback next to a form field.
+ */
 function setFieldError(input, message) {
   if (!input) return;
   let feedback = input.parentElement.querySelector('.input-error');
@@ -235,6 +256,9 @@ function setFieldError(input, message) {
   feedback.classList.toggle('hidden', !message);
 }
 
+/**
+ * Validates the user maintenance form and returns whether the input is valid.
+ */
 function validateUserForm() {
   const nameInput = $('#userName');
   const emailInput = $('#userEmail');
@@ -277,12 +301,18 @@ function validateUserForm() {
   return valid;
 }
 
+/**
+ * Returns the markup for the placeholder reset password action.
+ */
 function ensureResetPasswordButton(user) {
   return `
     <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-user-action="reset" data-id="${user.id}">Reset wachtwoord</button>
   `;
 }
 
+/**
+ * Renders the user rows for the current pagination selection.
+ */
 function renderUsersTableRows(users) {
   return users
     .map(user => `
