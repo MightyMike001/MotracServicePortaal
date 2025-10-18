@@ -115,3 +115,15 @@ test('handleAuthenticatedSession resets state safely when user name element is a
   assert.equal(state.session, null);
   assert.equal(state.profile, null);
 });
+
+test('handleAuthenticatedSession signs out gracefully when session user details are missing', async () => {
+  state.session = { access_token: 'token', user: { id: 'existing-user' } };
+  state.profile = { id: 'profile-id', auth_user_id: 'existing-user' };
+
+  const incompleteSession = { access_token: 'token', user: null };
+
+  await assert.doesNotReject(() => handleAuthenticatedSession(incompleteSession, { forceReload: true }));
+
+  assert.equal(state.session, null);
+  assert.equal(state.profile, null);
+});
