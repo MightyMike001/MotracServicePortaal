@@ -95,6 +95,51 @@
           <span id="loginSubmitLoading" class="hidden">Bezig…</span>
         </button>
       </form>
+      <div class="space-y-3">
+        <p class="text-sm text-gray-500">Of kies een demo-account om direct in te loggen:</p>
+        <div class="grid gap-2 sm:grid-cols-2" role="list">
+          <button
+            type="button"
+            class="w-full rounded-lg border border-gray-200 px-4 py-3 text-left hover:border-motrac-red hover:text-motrac-red transition-colors"
+            data-persona-login
+            data-email="test@motrac.nl"
+            role="listitem"
+          >
+            <span class="block text-sm font-semibold">Beheerder</span>
+            <span class="block text-xs text-gray-500">Volledige toegang tot alle modules</span>
+          </button>
+          <button
+            type="button"
+            class="w-full rounded-lg border border-gray-200 px-4 py-3 text-left hover:border-motrac-red hover:text-motrac-red transition-colors"
+            data-persona-login
+            data-email="gebruiker@motrac.nl"
+            role="listitem"
+          >
+            <span class="block text-sm font-semibold">Gebruiker</span>
+            <span class="block text-xs text-gray-500">Standaard toegang tot vloot en activiteit</span>
+          </button>
+          <button
+            type="button"
+            class="w-full rounded-lg border border-gray-200 px-4 py-3 text-left hover:border-motrac-red hover:text-motrac-red transition-colors"
+            data-persona-login
+            data-email="vloot@motrac.nl"
+            role="listitem"
+          >
+            <span class="block text-sm font-semibold">Vlootbeheerder</span>
+            <span class="block text-xs text-gray-500">Toegang tot geselecteerde demovloot</span>
+          </button>
+          <button
+            type="button"
+            class="w-full rounded-lg border border-gray-200 px-4 py-3 text-left hover:border-motrac-red hover:text-motrac-red transition-colors"
+            data-persona-login
+            data-email="klant@motrac.nl"
+            role="listitem"
+          >
+            <span class="block text-sm font-semibold">Klant</span>
+            <span class="block text-xs text-gray-500">Inzicht in Van Dijk Logistics vloot</span>
+          </button>
+        </div>
+      </div>
       <p class="text-xs text-gray-400 text-center">Toegang uitsluitend voor geautoriseerde Motrac klanten.</p>
       <button
         type="button"

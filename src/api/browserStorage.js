@@ -27,6 +27,51 @@ const TEST_PROFILE = {
   last_sign_in_at: null
 };
 
+const PERSONA_PROFILES = new Map(
+  [
+    {
+      id: 'profile-test',
+      auth_user_id: 'auth-user-test',
+      display_name: 'Testbeheerder',
+      email: 'test@motrac.nl',
+      phone: '+31 6 12345678',
+      role: 'Beheerder',
+      default_location_id: null,
+      default_location_name: 'Alle locaties'
+    },
+    {
+      id: 'profile-employee',
+      auth_user_id: 'auth-user-employee',
+      display_name: 'Interne gebruiker',
+      email: 'gebruiker@motrac.nl',
+      phone: '+31 6 87654321',
+      role: 'Gebruiker',
+      default_location_id: null,
+      default_location_name: 'Alle locaties'
+    },
+    {
+      id: 'profile-fleet',
+      auth_user_id: 'auth-user-fleet',
+      display_name: 'Vlootbeheer',
+      email: 'vloot@motrac.nl',
+      phone: '+31 6 99887766',
+      role: 'Vlootbeheerder',
+      default_location_id: null,
+      default_location_name: 'Demovloot Motrac – Almere'
+    },
+    {
+      id: 'profile-customer',
+      auth_user_id: 'auth-user-customer',
+      display_name: 'Van Dijk Logistics',
+      email: 'klant@motrac.nl',
+      phone: '+31 6 33445566',
+      role: 'Klant',
+      default_location_id: null,
+      default_location_name: 'Van Dijk Logistics – Rotterdam'
+    }
+  ].map(profile => [profile.email.toLowerCase(), Object.freeze(profile)])
+);
+
 const DEFAULT_ACCOUNT_REQUESTS = [
   {
     id: 'REQ-1001',
@@ -216,10 +261,42 @@ function resolveFleetName(fleetId) {
   return fleet?.fleetName ?? null;
 }
 
+function normaliseEmail(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function resolvePersonaProfile(email) {
+  const normalised = normaliseEmail(email);
+  if (!normalised) return null;
+  return PERSONA_PROFILES.get(normalised) || null;
+}
+
 function matchesTestCredentials(value) {
-  if (!value) return false;
-  const lowered = value.toLowerCase();
-  return TEST_CREDENTIALS.aliases.some(alias => alias.toLowerCase() === lowered);
+  const normalised = normaliseEmail(value);
+  if (!normalised) return false;
+  return TEST_CREDENTIALS.aliases.some(alias => normaliseEmail(alias) === normalised);
+}
+
+function applyPersonaToStore(email) {
+  const store = ensureStore();
+  const persona = resolvePersonaProfile(email);
+
+  if (persona) {
+    store.profile = {
+      ...TEST_PROFILE,
+      ...persona,
+      email: persona.email,
+      display_name: persona.display_name || persona.displayName || persona.email,
+      default_location_id: persona.default_location_id ?? null,
+      default_location_name:
+        persona.default_location_name || persona.defaultLocation || TEST_PROFILE.default_location_name,
+      last_sign_in_at: null
+    };
+  } else if (!store.profile) {
+    store.profile = { ...TEST_PROFILE };
+  }
+
+  return store;
 }
 
 function emitAuthEvent(event, session) {
@@ -278,8 +355,9 @@ export function onAuthStateChange(callback) {
 
 export async function signInWithPassword({ email, password }) {
   if (matchesTestCredentials(email) && password === TEST_CREDENTIALS.password) {
+    const store = applyPersonaToStore(email);
     const session = createSession();
-    ensureStore().session = session;
+    store.session = session;
     persistStore();
     emitAuthEvent('SIGNED_IN', cloneSession(session));
     return { session: cloneSession(session), user: cloneSession(session)?.user ?? null };
@@ -288,6 +366,24 @@ export async function signInWithPassword({ email, password }) {
   const error = new Error('Invalid login credentials');
   error.status = 400;
   throw error;
+}
+
+export async function signInWithPersona(email) {
+  const persona = resolvePersonaProfile(email);
+  if (!persona) {
+    const error = new Error('Persona not configured');
+    error.status = 404;
+    throw error;
+  }
+
+  const store = applyPersonaToStore(persona.email);
+
+  const session = createSession();
+  store.session = session;
+  persistStore();
+  emitAuthEvent('SIGNED_IN', cloneSession(session));
+
+  return { session: cloneSession(session), user: cloneSession(session)?.user ?? null };
 }
 
 export async function signOut() {

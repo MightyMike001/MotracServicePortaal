@@ -15,7 +15,7 @@ import { renderUsers, saveUser } from './users.js';
 import { openDetail, setDetailTab } from './detail.js';
 import { canViewFleetAsset } from './access.js';
 import { switchMainTab } from './tabs.js';
-import { handleLoginSubmit, signOut } from './auth.js';
+import { handleLoginSubmit, handlePersonaLogin, signOut } from './auth.js';
 import { handleAccountRequestSubmit, handleAccountRequestAction } from './accountRequests.js';
 
 export function wireEvents() {
@@ -67,6 +67,10 @@ export function wireEvents() {
   if (loginForm) {
     loginForm.addEventListener('submit', handleLoginSubmit);
   }
+
+  $$('[data-persona-login]').forEach(button =>
+    button.addEventListener('click', handlePersonaLogin)
+  );
 
   $$('#mainTabs button').forEach(button =>
     button.addEventListener('click', () => {
