@@ -285,8 +285,16 @@ function resetState() {
  * Applies persona information and loads data when the session changes.
  */
 export async function handleAuthenticatedSession(session, { forceReload = false } = {}) {
-  const currentToken = state.session?.access_token ?? null;
   const nextToken = session?.access_token ?? null;
+  const sessionUserId =
+    typeof session?.user?.id === 'string' ? session.user.id.trim() : '';
+
+  if (!session || !sessionUserId) {
+    resetState();
+    return;
+  }
+
+  const currentToken = state.session?.access_token ?? null;
 
   if ((!forceReload || state.hasLoadedInitialData) && currentToken === nextToken) {
     return;
@@ -294,19 +302,15 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
 
   state.session = session;
 
-  if (!session) {
-    resetState();
-    return;
-  }
-
   setLoginStatus('Gegevens worden geladen…');
 
   let profile = state.profile;
-  const shouldFetchProfile = forceReload || !profile || profile?.auth_user_id !== session.user.id;
+  const shouldFetchProfile =
+    forceReload || !profile || profile?.auth_user_id !== sessionUserId;
 
   if (shouldFetchProfile) {
     try {
-      profile = await fetchProfileByAuthUserId(session.user.id);
+      profile = await fetchProfileByAuthUserId(sessionUserId);
     } catch (error) {
       console.error('Kon profielgegevens niet laden', error);
     }
