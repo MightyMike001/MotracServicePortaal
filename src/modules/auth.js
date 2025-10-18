@@ -65,6 +65,10 @@ const TEST_ACCOUNTS = [
   }
 ];
 
+const ACCOUNT_LOOKUP = new Map(
+  TEST_ACCOUNTS.map(account => [normaliseEmail(account.email), account])
+);
+
 /**
  * Normalises e-mail input to ensure case-insensitive matching.
  */
@@ -77,7 +81,7 @@ function normaliseEmail(value) {
  */
 function findAccountByEmail(email) {
   const normalised = normaliseEmail(email);
-  return TEST_ACCOUNTS.find(account => normaliseEmail(account.email) === normalised) || null;
+  return ACCOUNT_LOOKUP.get(normalised) || null;
 }
 
 /**

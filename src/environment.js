@@ -42,11 +42,40 @@ export const ENVIRONMENTS = {
 
 export function getEnvironmentKeyForRole(role) {
   if (!role) return 'pending';
-  return ROLE_TO_ENVIRONMENT[role] || 'pending';
+  const value = typeof role === 'string' ? role.trim() : '';
+  if (!value) {
+    return 'pending';
+  }
+
+  const directMatch = ROLE_TO_ENVIRONMENT[value];
+  if (directMatch) {
+    return directMatch;
+  }
+
+  const normalisedKey = Object.keys(ROLE_TO_ENVIRONMENT).find(
+    knownRole => knownRole.toLowerCase() === value.toLowerCase()
+  );
+
+  return normalisedKey ? ROLE_TO_ENVIRONMENT[normalisedKey] : 'pending';
 }
 
 export function resolveEnvironment(input) {
   if (!input) {
+    return ENVIRONMENTS.pending;
+  }
+
+  if (typeof input === 'object') {
+    if (input.key && ENVIRONMENTS[input.key]) {
+      return ENVIRONMENTS[input.key];
+    }
+
+    if (input.role) {
+      const keyFromRole = getEnvironmentKeyForRole(input.role);
+      if (ENVIRONMENTS[keyFromRole]) {
+        return ENVIRONMENTS[keyFromRole];
+      }
+    }
+
     return ENVIRONMENTS.pending;
   }
 
