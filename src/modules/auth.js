@@ -163,6 +163,10 @@ export function showLoginPage() {
   if (passwordInput) {
     passwordInput.value = DEFAULT_LOGIN_PASSWORD;
   }
+  if (!emailInput) {
+    const firstPersonaButton = document.querySelector('[data-persona-login]');
+    firstPersonaButton?.focus?.();
+  }
 }
 
 /**
