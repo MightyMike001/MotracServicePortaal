@@ -50,6 +50,15 @@ export function applyEnvironmentForRole(role) {
     inlineSummaryEl.textContent = environment.summary;
   }
 
+  const inlineContainerEl = $('#environmentInline');
+  if (inlineContainerEl) {
+    inlineContainerEl.setAttribute('title', environment.summary);
+    inlineContainerEl.setAttribute(
+      'aria-label',
+      `${environment.label}. ${environment.summary}`
+    );
+  }
+
   $$('[data-tab-target]').forEach(item => {
     const tabKey = item.dataset.tabTarget;
     const button = item.querySelector('[data-nav-button]');

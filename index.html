@@ -116,8 +116,8 @@
   <div id="app" class="min-h-screen hidden">
     <!-- Top Navigation -->
     <header class="bg-white shadow-soft sticky top-0 z-40">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-center gap-3 order-1">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div class="flex items-center gap-3 order-1 flex-shrink-0">
           <img
             src="./assets/motrac-logo.svg"
             alt="Motrac logo"
@@ -128,7 +128,7 @@
             <p class="text-xs text-gray-500">Prototype • geen echte data</p>
           </div>
         </div>
-        <div class="flex items-center gap-3 order-3 sm:order-2 sm:flex-1 sm:justify-center">
+        <div class="flex items-center gap-2 order-3 sm:order-2 sm:flex-1 sm:justify-center w-full sm:w-auto">
           <button
             id="mobileMenuToggle"
             class="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 text-gray-600"
@@ -205,19 +205,13 @@
             </ul>
           </nav>
         </div>
-        <div class="flex items-center gap-3 order-2 sm:order-3 sm:justify-end">
-          <div
-            id="environmentInline"
-            class="flex flex-col gap-1 text-xs sm:text-sm text-gray-600 leading-snug"
-          >
-            <span class="text-[11px] uppercase tracking-wide text-gray-400">Overzicht</span>
-            <p class="text-sm text-gray-700">
-              <span id="environmentInlineLabel" class="font-medium text-gray-800">Beheerder</span>
-              <span class="text-gray-400">–</span>
-              <span id="environmentInlineSummary" class="text-gray-600">
-                Volledige toegang tot vloot, activiteiten en gebruikersbeheer.
-              </span>
-            </p>
+        <div class="flex items-center gap-3 order-2 sm:order-3 sm:justify-end w-full sm:w-auto">
+          <div id="environmentInline" class="environment-pill" role="status" aria-live="polite">
+            <span class="environment-pill__dot" aria-hidden="true"></span>
+            <span id="environmentInlineLabel" class="environment-pill__role">Beheerder</span>
+            <span id="environmentInlineSummary" class="visually-hidden">
+              Volledige toegang tot vloot, activiteiten en gebruikersbeheer.
+            </span>
           </div>
           <div class="relative">
             <button
