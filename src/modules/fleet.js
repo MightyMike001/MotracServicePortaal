@@ -414,6 +414,17 @@ export function renderFleet() {
 export function updateLocationFilter(nextLocation) {
   state.fleetFilter.location = nextLocation;
   persistLocationPreference(nextLocation);
+  const activityLocationFilter = $('#activityLocationFilter');
+  if (activityLocationFilter && activityLocationFilter.value !== nextLocation) {
+    const options = Array.from(activityLocationFilter.options);
+    if (options.some(option => option.value === nextLocation)) {
+      activityLocationFilter.value = nextLocation;
+    } else if (options.some(option => option.value === 'Alle locaties')) {
+      activityLocationFilter.value = 'Alle locaties';
+    } else if (options.length) {
+      activityLocationFilter.value = options[0].value;
+    }
+  }
 }
 
 /**
@@ -430,5 +441,14 @@ export function resetFleetFilters() {
   const searchInput = $('#searchInput');
   if (searchInput) {
     searchInput.value = '';
+  }
+  const activityLocationFilter = $('#activityLocationFilter');
+  if (activityLocationFilter) {
+    const options = Array.from(activityLocationFilter.options);
+    if (options.some(option => option.value === 'Alle locaties')) {
+      activityLocationFilter.value = 'Alle locaties';
+    } else if (options.length) {
+      activityLocationFilter.value = options[0].value;
+    }
   }
 }
