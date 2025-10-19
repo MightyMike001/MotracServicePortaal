@@ -50,14 +50,15 @@ export function applyEnvironmentForRole(role) {
     inlineSummaryEl.textContent = environment.summary;
   }
 
-  $$('#mainTabs button').forEach(button => {
-    const allowed = environment.allowedTabs.includes(button.dataset.tab);
-    const listItem = button.closest('li');
-    if (listItem) {
-      listItem.classList.toggle('hidden', !allowed);
+  $$('[data-tab-target]').forEach(item => {
+    const tabKey = item.dataset.tabTarget;
+    const button = item.querySelector('[data-nav-button]');
+    const allowed = environment.allowedTabs.includes(tabKey);
+    item.classList.toggle('hidden', !allowed);
+    if (button) {
+      button.disabled = !allowed;
+      button.classList.toggle('opacity-40', !allowed);
     }
-    button.disabled = !allowed;
-    button.classList.toggle('opacity-40', !allowed);
   });
 
   switchMainTab(state.activeTab);

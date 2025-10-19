@@ -72,7 +72,7 @@ export function wireEvents() {
     button.addEventListener('click', handlePersonaLogin)
   );
 
-  $$('#mainTabs button').forEach(button =>
+  $$('[data-nav-button]').forEach(button =>
     button.addEventListener('click', () => {
       if (button.disabled) return;
       switchMainTab(button.dataset.tab);
