@@ -16,7 +16,7 @@ import { openDetail, setDetailTab } from './detail.js';
 import { canViewFleetAsset } from './access.js';
 import { switchMainTab } from './tabs.js';
 import { handleLoginSubmit, handlePersonaLogin, signOut } from './auth.js';
-import { handleAccountRequestSubmit, handleAccountRequestAction } from './accountRequests.js';
+import { handleAccountRequestAction } from './accountRequests.js';
 
 export function wireEvents() {
   if (state.eventsWired) return;
@@ -81,19 +81,6 @@ export function wireEvents() {
       }
     })
   );
-
-  $('#openAccountRequest')?.addEventListener('click', () => {
-    const form = $('#accountRequestForm');
-    if (form?.reset) {
-      form.reset();
-    }
-    openModal('#modalAccountRequest');
-  });
-
-  const accountRequestForm = $('#accountRequestForm');
-  if (accountRequestForm) {
-    accountRequestForm.addEventListener('submit', handleAccountRequestSubmit);
-  }
 
   const resetUserFormErrors = () => {
     document.querySelectorAll('#modalUser .input-error').forEach(element => {

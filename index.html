@@ -58,45 +58,13 @@
         />
         <div>
           <h1 class="text-xl font-semibold">Motrac Serviceportal</h1>
-          <p class="text-sm text-gray-500">Log in met uw account</p>
+          <p class="text-sm text-gray-500">Kies een demo-account om verder te gaan</p>
         </div>
       </div>
-      <form id="loginForm" class="space-y-5">
-        <div>
-          <label for="loginEmail" class="block text-sm font-medium text-gray-700">Inlognaam</label>
-          <input
-            id="loginEmail"
-            type="text"
-            autocomplete="username"
-            value="test@motrac.nl"
-            required
-            class="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-motrac-red focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label for="loginPassword" class="block text-sm font-medium text-gray-700">Wachtwoord</label>
-          <input
-            id="loginPassword"
-            type="password"
-            autocomplete="current-password"
-            value="test"
-            required
-            class="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-motrac-red focus:border-transparent"
-          />
-        </div>
+      <div class="space-y-5">
         <p id="loginStatus" class="text-sm text-gray-500 hidden"></p>
         <p id="loginError" class="text-sm text-red-600 hidden"></p>
-        <button
-          id="loginSubmit"
-          type="submit"
-          class="w-full inline-flex items-center justify-center gap-2 bg-motrac-red text-white px-4 py-2 rounded-lg font-medium hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          <span id="loginSubmitDefault">Inloggen</span>
-          <span id="loginSubmitLoading" class="hidden">Bezig…</span>
-        </button>
-      </form>
-      <div class="space-y-3">
-        <p class="text-sm text-gray-500">Of kies een demo-account om direct in te loggen:</p>
+        <p class="text-sm text-gray-500">Selecteer een demo-account om direct in te loggen:</p>
         <div class="grid gap-2 sm:grid-cols-2" role="list">
           <button
             type="button"
@@ -141,13 +109,6 @@
         </div>
       </div>
       <p class="text-xs text-gray-400 text-center">Toegang uitsluitend voor geautoriseerde Motrac klanten.</p>
-      <button
-        type="button"
-        id="openAccountRequest"
-        class="w-full inline-flex items-center justify-center gap-2 border border-dashed border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:border-motrac-red hover:text-motrac-red"
-      >
-        <span>Nieuw account aanvragen</span>
-      </button>
     </div>
   </div>
 
@@ -578,49 +539,6 @@
         <button data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
         <button id="userSave" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Opslaan</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Nieuw account aanvragen -->
-  <div id="modalAccountRequest" class="modal fixed inset-0 bg-black/40 items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-xl shadow-soft p-6 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Nieuw account aanvragen</h3>
-        <button data-close class="text-gray-500">✕</button>
-      </div>
-      <form id="accountRequestForm" class="space-y-4">
-        <div class="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm text-gray-600">Naam</label>
-            <input id="requestName" type="text" class="mt-1 w-full border rounded-lg px-3 py-2" required />
-          </div>
-          <div>
-            <label class="block text-sm text-gray-600">Organisatie</label>
-            <input id="requestOrganisation" type="text" class="mt-1 w-full border rounded-lg px-3 py-2" required />
-          </div>
-          <div>
-            <label class="block text-sm text-gray-600">E-mailadres</label>
-            <input id="requestEmail" type="email" class="mt-1 w-full border rounded-lg px-3 py-2" required />
-          </div>
-          <div>
-            <label class="block text-sm text-gray-600">Telefoonnummer</label>
-            <input id="requestPhone" type="tel" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Optioneel" />
-          </div>
-          <div class="sm:col-span-2">
-            <label class="block text-sm text-gray-600">Aanvullende informatie</label>
-            <input id="requestNotes" type="text" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Bijv. klantnummer" />
-          </div>
-        </div>
-        <p class="text-xs text-gray-500">
-          Na verzenden ontvangt een Motrac beheerder de aanvraag en koppelt de juiste rechten aan uw account. U kunt
-          direct een wachtwoord aanmaken en hiermee inloggen, maar zolang uw account nog in aanvraag is ziet u geen
-          inhoud totdat een beheerder uw rol heeft toegewezen en het account heeft goedgekeurd.
-        </p>
-        <div class="flex justify-end gap-2">
-          <button type="button" data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
-          <button type="submit" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Aanvraag versturen</button>
-        </div>
-      </form>
     </div>
   </div>
 
