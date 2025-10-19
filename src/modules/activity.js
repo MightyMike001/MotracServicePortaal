@@ -122,7 +122,7 @@ function ensureAttachmentPreviewContainer(fileInput) {
   wrapper.appendChild(helper);
   wrapper.appendChild(list);
 
-  fileInput.closest('.sm\:col-span-2')?.appendChild(wrapper);
+  fileInput.closest('[data-ticket-photos-container]')?.appendChild(wrapper);
   return list;
 }
 
