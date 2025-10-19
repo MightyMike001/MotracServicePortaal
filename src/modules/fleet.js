@@ -1,4 +1,4 @@
-import { LOCATIONS, FLEET } from '../data.js';
+import { LOCATIONS, FLEET, getFleetById } from '../data.js';
 import { state } from '../state.js';
 import { $, fmtDate, formatHoursHtml, formatCustomerOwnership } from '../utils.js';
 import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
@@ -81,11 +81,19 @@ function resolveFilterLocation(allowedLocations) {
  */
 function renderSelectOptions(select, options, selectedValue) {
   if (!select) return;
-  select.innerHTML = options
-    .map(location => `<option value="${location}">${location}</option>`)
-    .join('');
-  if (selectedValue) {
+  const previousValue = select.value;
+  const markup = options.map(location => `<option value="${location}">${location}</option>`).join('');
+  if (select.dataset.renderHash !== markup) {
+    select.innerHTML = markup;
+    select.dataset.renderHash = markup;
+  }
+  if (selectedValue != null) {
     select.value = selectedValue;
+  } else if (select.dataset.renderHash === markup && previousValue) {
+    const hasPrevious = Array.from(select.options).some(option => option.value === previousValue);
+    if (hasPrevious) {
+      select.value = previousValue;
+    }
   }
 }
 
@@ -95,16 +103,27 @@ function renderSelectOptions(select, options, selectedValue) {
 function renderTicketOptions(select, accessibleFleet) {
   if (!select) return;
   const activeFleet = accessibleFleet.filter(truck => truck?.active);
-  select.innerHTML = activeFleet
+  const previousValue = select.value;
+  const markup = activeFleet
     .map(truck => `<option value="${truck.id}">${truck.id} — ${truck.location || 'Onbekende locatie'}</option>`)
     .join('');
+  if (select.dataset.renderHash !== markup) {
+    select.innerHTML = markup;
+    select.dataset.renderHash = markup;
+    if (previousValue) {
+      const hasPrevious = Array.from(select.options).some(option => option.value === previousValue);
+      if (hasPrevious) {
+        select.value = previousValue;
+      }
+    }
+  }
 }
 
 /**
  * Finds a truck by id in the global fleet dataset.
  */
 function findTruckById(truckId) {
-  return FLEET.find(item => item.id === truckId) || null;
+  return getFleetById(truckId);
 }
 
 /**
@@ -263,28 +282,46 @@ export function populateLocationFilters() {
 }
 
 function filteredFleet() {
-  const query = state.fleetFilter.query.trim().toLowerCase();
+  const queryValue = state.fleetFilter.query;
+  const query = queryValue ? queryValue.trim().toLowerCase() : '';
   const location = state.fleetFilter.location;
-  return filterFleetByAccess(FLEET)
-    .filter(truck => truck?.active)
-    .filter(truck => location === 'Alle locaties' || truck.location === location)
-    .filter(truck => {
-      if (!query) return true;
-      return [
-        truck.id,
-        truck.ref,
-        truck.model,
-        truck.modelType,
-        truck.contract?.nummer,
-        truck.location,
-        truck.fleetName,
-        truck.ownershipLabel,
-        truck.customer?.name,
-        truck.customer?.subLocation
-      ]
-        .map(value => (value == null ? '' : String(value)))
-        .some(value => value.toLowerCase().includes(query));
-    });
+  const accessibleFleet = filterFleetByAccess(FLEET);
+
+  return accessibleFleet.filter(truck => {
+    if (!truck?.active) {
+      return false;
+    }
+
+    if (location && location !== 'Alle locaties' && truck.location !== location) {
+      return false;
+    }
+
+    if (!query) {
+      return true;
+    }
+
+    const fields = [
+      truck.id,
+      truck.ref,
+      truck.model,
+      truck.modelType,
+      truck.contract?.nummer,
+      truck.location,
+      truck.fleetName,
+      truck.ownershipLabel,
+      truck.customer?.name,
+      truck.customer?.subLocation
+    ];
+
+    for (const field of fields) {
+      if (field == null) continue;
+      if (String(field).toLowerCase().includes(query)) {
+        return true;
+      }
+    }
+
+    return false;
+  });
 }
 
 function renderEmptyState(tableBody) {

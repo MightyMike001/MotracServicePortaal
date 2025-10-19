@@ -1,7 +1,7 @@
-import { FLEET } from '../data.js';
+import { FLEET, getFleetById } from '../data.js';
 import { state } from '../state.js';
 import { $, fmtDate } from '../utils.js';
-import { filterFleetByAccess } from './access.js';
+import { filterFleetByAccess, canViewFleetAsset } from './access.js';
 import { renderFleet } from './fleet.js';
 import { showToast } from './ui/toast.js';
 
@@ -308,7 +308,7 @@ function ensureDetailOverlay() {
 }
 
 function updateActivityStatus(detail, nextStatus) {
-  const truck = FLEET.find(item => item.id === detail.truckId);
+  const truck = getFleetById(detail.truckId);
   if (!truck) return;
   const activity = (truck.activity || []).find(entry => entry.id === detail.activityId);
   if (!activity) return;
@@ -385,8 +385,8 @@ function renderDetail(truck, activity) {
  * Opens the detail overlay for a selected activity card.
  */
 export function openActivityDetail(truckId, activityId) {
-  const truck = filterFleetByAccess(FLEET).find(item => item.id === truckId);
-  if (!truck) {
+  const truck = getFleetById(truckId);
+  if (!truck || !canViewFleetAsset(truck)) {
     showToast('U heeft geen toegang tot deze melding.', { variant: 'error' });
     return;
   }

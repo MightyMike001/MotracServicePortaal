@@ -1,4 +1,4 @@
-import { FLEET } from '../data.js';
+import { getFleetGroupByFleetId } from '../data.js';
 import { state } from '../state.js';
 import { resolveEnvironment } from '../environment.js';
 import { $, $$ } from '../utils.js';
@@ -7,7 +7,7 @@ import { setMainTab } from './navigation.js';
 
 export function getFleetSummaryById(fleetId) {
   if (!fleetId) return null;
-  const matches = FLEET.filter(item => item?.fleetId === fleetId);
+  const matches = getFleetGroupByFleetId(fleetId);
   if (!matches.length) {
     return null;
   }

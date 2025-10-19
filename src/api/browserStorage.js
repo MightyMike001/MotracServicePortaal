@@ -1,4 +1,4 @@
-import { LOCATIONS, FLEET, USERS } from '../data.js';
+import { LOCATIONS, FLEET, USERS, getFleetRepresentativeByFleetId } from '../data.js';
 
 const STORAGE_KEY = 'motrac-service-portal';
 
@@ -257,7 +257,7 @@ function generateRequestId() {
 
 function resolveFleetName(fleetId) {
   if (!fleetId) return null;
-  const fleet = FLEET.find(item => item.fleetId === fleetId);
+  const fleet = getFleetRepresentativeByFleetId(fleetId);
   return fleet?.fleetName ?? null;
 }
 

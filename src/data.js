@@ -282,6 +282,29 @@ export let LOCATIONS = [...DEFAULT_LOCATIONS];
 export let FLEET = DEFAULT_FLEET.map(item => normaliseFleetItem(item));
 export let USERS = [...DEFAULT_USERS];
 
+let fleetIndex = new Map();
+let fleetGroups = new Map();
+
+function rebuildFleetIndex() {
+  const nextIndex = new Map();
+  const nextGroups = new Map();
+
+  FLEET.forEach(item => {
+    nextIndex.set(item.id, item);
+    if (item.fleetId) {
+      if (!nextGroups.has(item.fleetId)) {
+        nextGroups.set(item.fleetId, []);
+      }
+      nextGroups.get(item.fleetId).push(item);
+    }
+  });
+
+  fleetIndex = nextIndex;
+  fleetGroups = nextGroups;
+}
+
+rebuildFleetIndex();
+
 export function setLocations(locations = []) {
   const cleaned = Array.isArray(locations) ? locations.filter(Boolean) : [];
   const unique = Array.from(new Set(cleaned));
@@ -297,6 +320,7 @@ export function setFleet(fleet = []) {
   }
 
   FLEET = fleet.map(item => normaliseFleetItem(item));
+  rebuildFleetIndex();
 }
 
 export function setUsers(users = []) {
@@ -309,4 +333,22 @@ export function resetToDefaults() {
   LOCATIONS = [...DEFAULT_LOCATIONS];
   FLEET = DEFAULT_FLEET.map(item => normaliseFleetItem(item));
   USERS = [...DEFAULT_USERS];
+  rebuildFleetIndex();
+}
+
+export function getFleetById(id) {
+  if (!id) return null;
+  return fleetIndex.get(id) || null;
+}
+
+export function getFleetGroupByFleetId(fleetId) {
+  if (!fleetId) return [];
+  const group = fleetGroups.get(fleetId);
+  return group ? [...group] : [];
+}
+
+export function getFleetRepresentativeByFleetId(fleetId) {
+  if (!fleetId) return null;
+  const group = fleetGroups.get(fleetId);
+  return group && group.length ? group[0] : null;
 }

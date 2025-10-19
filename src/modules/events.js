@@ -1,4 +1,4 @@
-import { FLEET, USERS } from '../data.js';
+import { USERS, getFleetById } from '../data.js';
 import { state } from '../state.js';
 import { $, $$, fmtDate, openModal, closeModals, kv, formatHoursLabel } from '../utils.js';
 import { showToast } from './ui/toast.js';
@@ -23,6 +23,12 @@ export function wireEvents() {
   state.eventsWired = true;
 
   initActivityComposer();
+
+  const getAccessibleTruck = truckId => {
+    if (!truckId) return null;
+    const truck = getFleetById(truckId);
+    return truck && canViewFleetAsset(truck) ? truck : null;
+  };
 
   function closeKebabMenus(except = null) {
     $$('.kebab-menu').forEach(menu => {
@@ -186,8 +192,8 @@ export function wireEvents() {
 
     const action = actionButton.dataset.action;
     const id = actionButton.dataset.id || state.selectedTruckId;
-    const truck = FLEET.find(item => item.id === id);
-    if (!truck || !canViewFleetAsset(truck)) return;
+    const truck = getAccessibleTruck(id);
+    if (!truck) return;
 
     if (action === 'newTicket' || action === 'newTicketFromDetail') {
       const ticketSelect = $('#ticketTruck');
@@ -299,8 +305,8 @@ export function wireEvents() {
       return;
     }
 
-    const truck = FLEET.find(item => item.id === id);
-    if (!truck || !canViewFleetAsset(truck)) {
+    const truck = getAccessibleTruck(id);
+    if (!truck) {
       showToast('U heeft geen toegang tot dit object.');
       return;
     }
@@ -338,8 +344,8 @@ export function wireEvents() {
 
   $('#odoSave')?.addEventListener('click', event => {
     const id = event.target.dataset.id;
-    const truck = FLEET.find(item => item.id === id);
-    if (!truck || !canViewFleetAsset(truck)) {
+    const truck = getAccessibleTruck(id);
+    if (!truck) {
       showToast('U heeft geen toegang tot dit object.');
       return;
     }
@@ -366,8 +372,8 @@ export function wireEvents() {
 
   $('#refSave')?.addEventListener('click', event => {
     const id = event.target.dataset.id;
-    const truck = FLEET.find(item => item.id === id);
-    if (!truck || !canViewFleetAsset(truck)) {
+    const truck = getAccessibleTruck(id);
+    if (!truck) {
       showToast('U heeft geen toegang tot dit object.');
       return;
     }
@@ -393,8 +399,8 @@ export function wireEvents() {
       showToast('Datum en reden zijn verplicht.');
       return;
     }
-    const truck = FLEET.find(item => item.id === id);
-    if (!truck || !canViewFleetAsset(truck)) {
+    const truck = getAccessibleTruck(id);
+    if (!truck) {
       showToast('U heeft geen toegang tot dit object.');
       return;
     }
