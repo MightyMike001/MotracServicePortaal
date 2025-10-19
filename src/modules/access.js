@@ -70,15 +70,17 @@ export function filterFleetByAccess(fleet = []) {
  * Ensures the currently selected location remains accessible after updates.
  */
 export function ensureAccessibleLocation(currentLocation, availableLocations = []) {
-  if (!availableLocations.length) {
+  const locations = Array.isArray(availableLocations) ? availableLocations : [];
+
+  if (!locations.length) {
     return 'Alle locaties';
   }
 
-  if (availableLocations.includes(currentLocation)) {
+  if (locations.includes(currentLocation)) {
     return currentLocation;
   }
 
-  return availableLocations.includes('Alle locaties') ? 'Alle locaties' : availableLocations[0];
+  return locations.includes('Alle locaties') ? 'Alle locaties' : locations[0];
 }
 
 /**
