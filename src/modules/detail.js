@@ -1,11 +1,11 @@
-import { FLEET } from '../data.js';
+import { getFleetById } from '../data.js';
 import { state } from '../state.js';
 import { $, $$, fmtDate, kv, formatHoursHtml, formatCustomerOwnership } from '../utils.js';
 import { canViewFleetAsset } from './access.js';
 
 export function openDetail(id) {
   state.selectedTruckId = id;
-  const truck = FLEET.find(item => item.id === id);
+  const truck = getFleetById(id);
   if (!truck || !canViewFleetAsset(truck)) return;
 
   $('#detailTitle').textContent = `${truck.id} • ${truck.ref}`;
@@ -22,7 +22,7 @@ export function setDetailTab(tab) {
     button.classList.toggle('tab-active', button.dataset.subtab === tab);
   });
 
-  const truck = FLEET.find(item => item.id === state.selectedTruckId);
+  const truck = getFleetById(state.selectedTruckId);
   if (!truck || !canViewFleetAsset(truck)) return;
 
   if (tab === 'info') {
