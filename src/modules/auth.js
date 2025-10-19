@@ -32,6 +32,14 @@ const TAB_LABELS = {
   users: 'Gebruikersbeheer'
 };
 
+const USER_STATUS_CLASSES = {
+  active: 'user-status-indicator--active',
+  pending: 'user-status-indicator--pending',
+  signedOut: 'user-status-indicator--signed-out'
+};
+
+const USER_STATUS_CLASS_LIST = Object.values(USER_STATUS_CLASSES);
+
 /**
  * Hard-coded personas that simulate the available roles within the prototype.
  */
@@ -301,6 +309,49 @@ function setStoredLocationPreference(location) {
   }
 }
 
+function updateUserButtonAccessibility(displayName, environment) {
+  const userBtn = $('#userBtn');
+  if (!userBtn) return;
+
+  const safeName = typeof displayName === 'string' && displayName.trim() ? displayName.trim() : 'Niet ingelogd';
+  const environmentLabel = typeof environment?.label === 'string' && environment.label.trim()
+    ? environment.label.trim()
+    : '';
+
+  const ariaParts = ['Accountmenu', safeName];
+  if (environmentLabel) {
+    ariaParts.push(environmentLabel);
+  }
+
+  userBtn.setAttribute('aria-label', ariaParts.join(', '));
+  if (environmentLabel) {
+    userBtn.title = `${safeName} • ${environmentLabel}`;
+  } else {
+    userBtn.title = safeName;
+  }
+}
+
+function applyUserStatusIndicator(environment, displayName) {
+  const indicator = $('#userStatusIndicator');
+  if (indicator) {
+    indicator.classList.remove(...USER_STATUS_CLASS_LIST);
+    let className = USER_STATUS_CLASSES.signedOut;
+    if (environment) {
+      className = environment.key === 'pending' ? USER_STATUS_CLASSES.pending : USER_STATUS_CLASSES.active;
+    }
+    indicator.classList.add(className);
+    const statusValue = environment?.key || 'signed-out';
+    if (indicator.dataset) {
+      indicator.dataset.status = statusValue;
+    } else {
+      indicator.setAttribute?.('data-status', statusValue);
+    }
+    indicator.title = environment?.label || 'Niet ingelogd';
+  }
+
+  updateUserButtonAccessibility(displayName, environment);
+}
+
 /**
  * Merges the Supabase profile with the prototype persona information.
  */
@@ -361,6 +412,7 @@ function resetState() {
   if (userMenuEmail) {
     userMenuEmail.textContent = '';
   }
+  applyUserStatusIndicator(null, 'Niet ingelogd');
   showLoginPage();
 }
 
@@ -467,9 +519,10 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
     state.activeTab = 'vloot';
   }
 
-  applyEnvironmentForRole(mergedProfile?.role);
-
   const environment = resolveEnvironment(mergedProfile?.role);
+
+  applyEnvironmentForRole(mergedProfile?.role);
+  applyUserStatusIndicator(environment, displayName);
   const allowedTabs = Array.isArray(state.allowedTabs) ? state.allowedTabs : [];
   if (forceReload) {
     const readableTabs = allowedTabs.length
