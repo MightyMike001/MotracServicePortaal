@@ -147,10 +147,13 @@
             aria-label="Hoofdmenu"
           >
             <ul class="flex items-center justify-center gap-2 sm:gap-3 w-full" id="mainTabs">
-              <li>
+              <li data-tab-target="vloot">
                 <button
+                  type="button"
                   data-tab="vloot"
+                  data-nav-button
                   class="tab-active inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  aria-current="page"
                   aria-label="Vloot"
                   title="Vloot"
                 >
@@ -164,10 +167,13 @@
                   <span class="sr-only">Vloot</span>
                 </button>
               </li>
-              <li>
+              <li data-tab-target="activiteit">
                 <button
+                  type="button"
                   data-tab="activiteit"
+                  data-nav-button
                   class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  aria-current="false"
                   aria-label="Activiteit"
                   title="Activiteit"
                 >
@@ -177,10 +183,13 @@
                   <span class="sr-only">Activiteit</span>
                 </button>
               </li>
-              <li>
+              <li data-tab-target="users">
                 <button
+                  type="button"
                   data-tab="users"
+                  data-nav-button
                   class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  aria-current="false"
                   aria-label="Gebruikersbeheer"
                   title="Gebruikersbeheer"
                 >
@@ -230,7 +239,7 @@
     </header>
 
     <!-- Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-28 sm:pb-8 space-y-4">
       <!-- VLOOT -->
       <section id="tab-vloot" class="space-y-4">
         <!-- Filters -->
@@ -380,6 +389,63 @@
         </div>
       </section>
     </main>
+    <nav
+      id="mobileTabBar"
+      class="mobile-tab-bar sm:hidden"
+      aria-label="Hoofdmenu"
+    >
+      <ul class="mobile-tab-bar__list">
+        <li class="mobile-tab-bar__item" data-tab-target="vloot">
+          <button
+            type="button"
+            data-tab="vloot"
+            data-nav-button
+            class="mobile-tab-bar__button tab-active"
+            aria-current="page"
+          >
+            <svg class="mobile-tab-bar__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M4 6a2 2 0 012-2h8a2 2 0 012 2v5h2.586a1 1 0 01.707.293L21 14.414V17a1 1 0 01-1 1h-.382a2.25 2.25 0 11-4.486 0H9.868a2.25 2.25 0 11-4.486 0H5a1 1 0 01-1-1V6z"
+              />
+              <path d="M6.75 18a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+              <path d="M16.75 18a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+            </svg>
+            <span class="mobile-tab-bar__label">Vloot</span>
+          </button>
+        </li>
+        <li class="mobile-tab-bar__item" data-tab-target="activiteit">
+          <button
+            type="button"
+            data-tab="activiteit"
+            data-nav-button
+            class="mobile-tab-bar__button"
+            aria-current="false"
+          >
+            <svg class="mobile-tab-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M4 13l3.5 3.5L13 7l3.5 5L20 9" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="mobile-tab-bar__label">Activiteit</span>
+          </button>
+        </li>
+        <li class="mobile-tab-bar__item" data-tab-target="users">
+          <button
+            type="button"
+            data-tab="users"
+            data-nav-button
+            class="mobile-tab-bar__button"
+            aria-current="false"
+          >
+            <svg class="mobile-tab-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M16 19v-1a3 3 0 00-3-3H7a3 3 0 00-3 3v1" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="10" cy="8" r="3" />
+              <path d="M21 19v-1a3 3 0 00-2.4-2.94" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M15 4.14a3 3 0 010 5.72" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="mobile-tab-bar__label">Gebruikers</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
   </div>
 
   <!-- MODALS -->
