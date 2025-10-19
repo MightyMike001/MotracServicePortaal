@@ -220,18 +220,30 @@
             </p>
           </div>
           <div class="relative">
-            <button id="userBtn" class="flex items-center gap-3 px-3 py-2 bg-gray-100 rounded-lg">
-              <span class="h-2 w-2 bg-green-500 rounded-full"></span>
+            <button
+              id="userBtn"
+              class="flex items-center gap-3 px-3 py-2 bg-gray-100 rounded-lg"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="userMenu"
+            >
+              <span id="userStatusIndicator" class="user-status-indicator user-status-indicator--signed-out" aria-hidden="true"></span>
               <span id="currentUserName" class="text-sm">Niet ingelogd</span>
-              <span>⋯</span>
+              <span aria-hidden="true">⋯</span>
             </button>
-            <div id="userMenu" class="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft hidden">
-              <div class="px-4 py-3 border-b">
+            <div
+              id="userMenu"
+              class="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft hidden"
+              role="menu"
+              aria-labelledby="userBtn"
+            >
+              <div class="px-4 py-3 border-b" role="none">
                 <p class="text-sm font-semibold" id="userMenuName">Niet ingelogd</p>
                 <p class="text-xs text-gray-500" id="userMenuEmail"></p>
               </div>
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="logoutBtn">Uitloggen</button>
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="cancelUserMenu">Annuleren</button>
+              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="logoutBtn" type="button" role="menuitem">Uitloggen</button>
+              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" id="cancelUserMenu" type="button" role="menuitem">Annuleren</button>
             </div>
           </div>
         </div>

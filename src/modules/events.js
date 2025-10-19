@@ -54,14 +54,42 @@ export function wireEvents() {
     collapseMobileMenu();
   });
 
-  $('#userBtn')?.addEventListener('click', () => $('#userMenu')?.classList.toggle('hidden'));
-  $('#cancelUserMenu')?.addEventListener('click', () => $('#userMenu')?.classList.add('hidden'));
+  const userBtn = $('#userBtn');
+  const userMenu = $('#userMenu');
+  const setUserMenuVisibility = visible => {
+    if (!userMenu || !userBtn) return;
+    userMenu.classList.toggle('hidden', !visible);
+    userBtn.setAttribute('aria-expanded', visible ? 'true' : 'false');
+  };
+
+  userBtn?.addEventListener('click', () => {
+    if (!userMenu) return;
+    const isHidden = userMenu.classList.contains('hidden');
+    setUserMenuVisibility(isHidden);
+  });
+
+  const closeUserMenu = () => {
+    if (!userMenu || !userBtn) return;
+    if (!userMenu.classList.contains('hidden')) {
+      setUserMenuVisibility(false);
+    }
+  };
+
+  $('#cancelUserMenu')?.addEventListener('click', () => {
+    closeUserMenu();
+    userBtn?.focus?.();
+  });
+
   document.addEventListener('click', event => {
     if (!event.target.closest('#userBtn') && !event.target.closest('#userMenu')) {
-      $('#userMenu')?.classList.add('hidden');
+      closeUserMenu();
     }
   });
-  $('#logoutBtn')?.addEventListener('click', signOut);
+
+  $('#logoutBtn')?.addEventListener('click', async () => {
+    closeUserMenu();
+    await signOut();
+  });
 
   const loginForm = $('#loginForm');
   if (loginForm) {
