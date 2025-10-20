@@ -340,7 +340,8 @@ export function wireEvents() {
       showToast('Geen veld voor urenstand gevonden.');
       return;
     }
-    const value = parseInt(odoInput.value, 10);
+    const rawValue = typeof odoInput.value === 'string' ? odoInput.value.trim() : '';
+    const value = rawValue === '' ? Number.NaN : Number.parseInt(rawValue, 10);
     const currentHours = typeof truck.hours === 'number' && Number.isFinite(truck.hours) ? truck.hours : null;
     if (Number.isNaN(value) || value < 0 || (currentHours !== null && value < currentHours)) {
       showToast('Nieuwe urenstand moet ≥ huidige zijn.');
