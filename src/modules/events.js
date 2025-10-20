@@ -9,7 +9,8 @@ import {
   closeActivityDetail,
   initActivityComposer,
   consumeTicketAttachments,
-  resetTicketAttachments
+  resetTicketAttachments,
+  refreshMeldingen
 } from './activity.js';
 import { renderUsers, saveUser } from './users.js';
 import { openDetail, setDetailTab } from './detail.js';
@@ -44,6 +45,12 @@ export function wireEvents() {
   const collapseMobileMenu = () => {
     if (!mainNav) return;
     mainNav.classList.add('hidden');
+  };
+
+  let ticketAutoCloseTimer = null;
+  const cancelTicketAutoClose = () => {
+    window.clearTimeout(ticketAutoCloseTimer);
+    ticketAutoCloseTimer = null;
   };
 
   const userBtn = $('#userBtn');
@@ -187,6 +194,7 @@ export function wireEvents() {
         ticketSelect.value = truck.id;
       }
       resetTicketAttachments();
+      cancelTicketAutoClose();
       openModal('#modalTicket');
       return;
     }
@@ -276,12 +284,16 @@ export function wireEvents() {
     }
   });
 
-  $('#btnNewTicket')?.addEventListener('click', () => openModal('#modalTicket'));
+  $('#btnNewTicket')?.addEventListener('click', () => {
+    cancelTicketAutoClose();
+    openModal('#modalTicket');
+  });
   $('#btnNewTicketMobile')?.addEventListener('click', () => {
+    cancelTicketAutoClose();
     openModal('#modalTicket');
     collapseMobileMenu();
   });
-  $('#ticketCreate')?.addEventListener('click', () => {
+  $('#ticketCreate')?.addEventListener('click', async () => {
     const id = $('#ticketTruck')?.value;
     const type = $('#ticketType')?.value;
     const ticketDescInput = $('#ticketDesc');
@@ -308,11 +320,17 @@ export function wireEvents() {
     });
     truck.openActivityCount = truck.activity.filter(activity => activity?.status === 'Open').length;
 
-    closeModals();
     renderFleet();
-    renderActivity();
-    switchMainTab('activiteit');
-    showToast('Servicemelding aangemaakt.');
+    await refreshMeldingen();
+
+    showToast('Melding succesvol aangemaakt.', { variant: 'success' });
+
+    window.clearTimeout(ticketAutoCloseTimer);
+    ticketAutoCloseTimer = window.setTimeout(() => {
+      closeModals();
+      switchMainTab('activiteit');
+      ticketAutoCloseTimer = null;
+    }, 2000);
 
     const orderInput = $('#ticketOrder');
     if (orderInput) {
