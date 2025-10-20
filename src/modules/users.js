@@ -1,6 +1,15 @@
 import { FLEET, USERS } from '../data.js';
 import { state } from '../state.js';
-import { $, $$, renderStatusBadge, getToneForAccountRequestStatus } from '../utils.js';
+import {
+  $,
+  $$,
+  renderStatusBadge,
+  getToneForAccountRequestStatus,
+  createCsvContent,
+  downloadBlob,
+  createTablePdfBlob,
+  buildExportFilename
+} from '../utils.js';
 import { showToast } from './ui/toast.js';
 import { canManageUsers, canApproveAccountRequests } from './access.js';
 
@@ -674,6 +683,42 @@ export function renderUsers() {
   setPaginationControls(prevButton, nextButton, state.usersPage, totalPages);
 
   renderAccountRequests();
+}
+
+function getUsersForExport() {
+  return sortUsersList(filterUsers());
+}
+
+function buildUsersExportRows(users) {
+  return users.map(user => [user.name || '', user.location || '', user.email || '', user.role || '']);
+}
+
+export function exportUsers(format) {
+  const allowedFormats = new Set(['csv', 'pdf']);
+  if (!allowedFormats.has(format)) {
+    showToast('Onbekend exportformaat.', { variant: 'error' });
+    return;
+  }
+
+  const users = getUsersForExport();
+  if (!users.length) {
+    showToast('Geen gegevens beschikbaar voor export.', { variant: 'warning' });
+    return;
+  }
+
+  const headers = ['Gebruiker', 'Locatie', 'Email', 'Portaalrechten'];
+  const rows = buildUsersExportRows(users);
+
+  if (format === 'csv') {
+    const csvContent = createCsvContent(headers, rows);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, buildExportFilename('portalgebruikers', 'csv'));
+  } else {
+    const pdfBlob = createTablePdfBlob({ title: 'Portalgebruikers', headers, rows });
+    downloadBlob(pdfBlob, buildExportFilename('portalgebruikers', 'pdf'));
+  }
+
+  showToast('Export voltooid', { variant: 'success' });
 }
 
 /**
