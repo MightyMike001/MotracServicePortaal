@@ -30,6 +30,117 @@
   color: var(--color-on-primary);
   background: var(--color-primary);
   border-radius: var(--radius-sm);
+  border-color: var(--color-primary) !important;
+}
+
+.main-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.main-menu__item {
+  list-style: none;
+}
+
+.main-menu__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.main-menu__button:hover,
+.main-menu__button:focus-visible {
+  color: var(--color-text);
+  background: var(--color-highlight-bg);
+  border-color: var(--color-highlight-border);
+  outline: none;
+}
+
+.main-menu__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.main-menu__label {
+  line-height: 1;
+}
+
+.module-cycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.module-cycle:hover:not(:disabled) {
+  background: var(--color-highlight-bg);
+  border-color: var(--color-highlight-border);
+}
+
+.module-cycle:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.module-cycle:disabled {
+  cursor: not-allowed;
+}
+
+.module-cycle--disabled {
+  opacity: 0.6;
+}
+
+.module-cycle__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.module-cycle__label {
+  line-height: 1;
+}
+
+:root[data-theme="dark"] .main-menu__button {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+:root[data-theme="dark"] .main-menu__button:hover,
+:root[data-theme="dark"] .main-menu__button:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .module-cycle {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .module-cycle:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+:root[data-theme="dark"] .module-cycle--disabled {
+  opacity: 0.5;
 }
 
 .environment-pill {

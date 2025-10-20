@@ -17,12 +17,14 @@ import { canViewFleetAsset } from './access.js';
 import { switchMainTab } from './tabs.js';
 import { handleLoginSubmit, handlePersonaLogin, signOut } from './auth.js';
 import { handleAccountRequestAction } from './accountRequests.js';
+import { initRouter } from './router.js';
 
 export function wireEvents() {
   if (state.eventsWired) return;
   state.eventsWired = true;
 
   initActivityComposer();
+  initRouter(switchMainTab);
 
   const getAccessibleTruck = truckId => {
     if (!truckId) return null;
@@ -484,4 +486,15 @@ export function wireEvents() {
   });
 
   $$('#truckDetail [data-subtab]').forEach(button => button.addEventListener('click', () => setDetailTab(button.dataset.subtab)));
+
+  $('#moduleCycleBtn')?.addEventListener('click', () => {
+    const allowedTabs = Array.isArray(state.allowedTabs) ? state.allowedTabs : [];
+    if (allowedTabs.length <= 1) return;
+    const currentIndex = allowedTabs.indexOf(state.activeTab);
+    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % allowedTabs.length : 0;
+    const nextTab = allowedTabs[nextIndex];
+    if (nextTab && nextTab !== state.activeTab) {
+      switchMainTab(nextTab);
+    }
+  });
 }

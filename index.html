@@ -128,72 +128,76 @@
             <p class="text-xs text-gray-500">Prototype • geen echte data</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 order-3 sm:order-2 sm:flex-1 sm:justify-center w-full sm:w-auto">
+        <div class="flex items-center gap-4 order-3 sm:order-2 sm:flex-1 sm:justify-center w-full sm:w-auto">
           <nav
             id="mainNav"
-            class="hidden w-full sm:flex sm:w-auto sm:items-center sm:gap-4"
+            class="hidden w-full sm:flex sm:w-auto sm:items-center"
             aria-label="Hoofdmenu"
           >
-            <ul class="flex items-center justify-center gap-2 sm:gap-3 w-full" id="mainTabs">
-              <li data-tab-target="vloot">
+            <ul class="main-menu" id="mainTabs">
+              <li class="main-menu__item" data-tab-target="vloot">
                 <button
                   type="button"
                   data-tab="vloot"
                   data-nav-button
-                  class="tab-active inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  class="main-menu__button tab-active"
                   aria-current="page"
-                  aria-label="Vloot"
-                  title="Vloot"
                 >
-                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <svg class="main-menu__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path
                       d="M4 6a2 2 0 012-2h8a2 2 0 012 2v5h2.586a1 1 0 01.707.293L21 14.414V17a1 1 0 01-1 1h-.382a2.25 2.25 0 11-4.486 0H9.868a2.25 2.25 0 11-4.486 0H5a1 1 0 01-1-1V6z"
                     />
                     <path d="M6.75 18a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
                     <path d="M16.75 18a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
                   </svg>
-                  <span class="sr-only">Vloot</span>
+                  <span class="main-menu__label">Vloot</span>
                 </button>
               </li>
-              <li data-tab-target="activiteit">
+              <li class="main-menu__item" data-tab-target="activiteit">
                 <button
                   type="button"
                   data-tab="activiteit"
                   data-nav-button
-                  class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  class="main-menu__button"
                   aria-current="false"
-                  aria-label="Activiteit"
-                  title="Activiteit"
                 >
-                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <svg class="main-menu__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M4 13l3.5 3.5L13 7l3.5 5L20 9" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
-                  <span class="sr-only">Activiteit</span>
+                  <span class="main-menu__label">Activiteit</span>
                 </button>
               </li>
-              <li data-tab-target="users">
+              <li class="main-menu__item" data-tab-target="users">
                 <button
                   type="button"
                   data-tab="users"
                   data-nav-button
-                  class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  class="main-menu__button"
                   aria-current="false"
-                  aria-label="Gebruikersbeheer"
-                  title="Gebruikersbeheer"
                 >
-                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <svg class="main-menu__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path d="M16 19v-1a3 3 0 00-3-3H7a3 3 0 00-3 3v1" stroke-linecap="round" stroke-linejoin="round" />
                     <circle cx="10" cy="8" r="3" />
                     <path d="M21 19v-1a3 3 0 00-2.4-2.94" stroke-linecap="round" stroke-linejoin="round" />
                     <path d="M15 4.14a3 3 0 010 5.72" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
-                  <span class="sr-only">Gebruikersbeheer</span>
+                  <span class="main-menu__label">Gebruikers</span>
                 </button>
               </li>
             </ul>
           </nav>
         </div>
         <div class="flex items-center gap-3 order-2 sm:order-3 sm:justify-end w-full sm:w-auto">
+          <button
+            id="moduleCycleBtn"
+            class="module-cycle hidden sm:inline-flex"
+            type="button"
+            aria-label="Volgende module"
+            title="Volgende module"
+          >
+            <span class="module-cycle__icon" aria-hidden="true">➜</span>
+            <span id="moduleCycleLabel" class="module-cycle__label">Volgende module</span>
+          </button>
           <div id="environmentInline" class="environment-pill" role="status" aria-live="polite">
             <span class="environment-pill__dot" aria-hidden="true"></span>
             <span id="environmentInlineLabel" class="environment-pill__role">Beheerder</span>
