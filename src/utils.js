@@ -7,6 +7,18 @@ export const fmtDate = iso => {
   return Number.isNaN(date.valueOf()) ? '—' : date.toLocaleDateString('nl-NL');
 };
 
+export const fmtDateTime = iso => {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.valueOf())) {
+    return '—';
+  }
+  return date.toLocaleString('nl-NL', {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  });
+};
+
 const formatNumericValue = value => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value.toLocaleString('nl-NL');
