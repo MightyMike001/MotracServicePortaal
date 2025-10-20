@@ -152,7 +152,7 @@ export async function handleAccountRequestAction(button) {
 
       renderUsers();
       renderAccountRequests();
-      showToast(`Account toegekend aan ${request.name}.`);
+      showToast(`Account toegekend als ${selectedRole}.`);
     }
   } catch (error) {
     console.error('Accountaanvraag toekennen mislukt', error);
