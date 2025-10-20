@@ -421,6 +421,8 @@
   pointer-events: auto;
   background: var(--color-surface);
   color: var(--color-text);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .truncate-2 {
@@ -473,6 +475,7 @@ body {
 
 :where(
     a:not(.btn),
+    button,
     input,
     select,
     textarea,
