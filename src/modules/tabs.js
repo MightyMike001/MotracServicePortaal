@@ -3,7 +3,8 @@ import { state } from '../state.js';
 import { resolveEnvironment } from '../environment.js';
 import { $, $$ } from '../utils.js';
 import { renderAccountRequests } from './users.js';
-import { setMainTab } from './navigation.js';
+import { setMainTab, updateModuleCycleButton } from './navigation.js';
+import { navigateToTab, getCurrentRoute } from './router.js';
 
 export function getFleetSummaryById(fleetId) {
   if (!fleetId) return null;
@@ -26,6 +27,7 @@ export function switchMainTab(tab) {
   if (!allowedTabs.length) {
     state.activeTab = null;
     setMainTab(null);
+    updateModuleCycleButton([], null);
     return;
   }
 
@@ -33,6 +35,8 @@ export function switchMainTab(tab) {
   const targetTab = allowedTabs.includes(tab) ? tab : fallback;
   state.activeTab = targetTab;
   setMainTab(targetTab);
+  updateModuleCycleButton(allowedTabs, targetTab);
+  navigateToTab(targetTab);
 }
 
 export function applyEnvironmentForRole(role) {
@@ -69,6 +73,11 @@ export function applyEnvironmentForRole(role) {
       button.classList.toggle('opacity-40', !allowed);
     }
   });
+
+  const routeTab = getCurrentRoute();
+  if (routeTab) {
+    state.activeTab = routeTab;
+  }
 
   switchMainTab(state.activeTab);
   renderAccountRequests();

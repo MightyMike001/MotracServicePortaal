@@ -22,16 +22,11 @@ import { applyEnvironmentForRole } from './tabs.js';
 import { setMainTab } from './navigation.js';
 import { showToast } from './ui/toast.js';
 import { resolveEnvironment } from '../environment.js';
+import { TAB_LABELS } from './tabConfig.js';
 
 const DEFAULT_LOGIN_EMAIL = 'test@motrac.nl';
 const DEFAULT_LOGIN_PASSWORD = 'test';
 const LOCATION_STORAGE_KEY = 'motrac:lastLocation';
-const TAB_LABELS = {
-  vloot: 'Vloot',
-  activiteit: 'Activiteit',
-  users: 'Gebruikersbeheer'
-};
-
 const USER_STATUS_CLASSES = {
   active: 'user-status-indicator--active',
   pending: 'user-status-indicator--pending',
