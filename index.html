@@ -37,8 +37,13 @@
         const storageKey = 'theme';
         const storedTheme = localStorage.getItem(storageKey);
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+        const isDark = storedTheme === 'dark' || (!storedTheme && prefersDark);
+
+        if (isDark) {
           document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.style.colorScheme = 'light';
         }
       } catch (error) {
         console.error('Thema kan niet vooraf worden ingesteld:', error);
