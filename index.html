@@ -673,6 +673,21 @@
     </div>
   </dialog>
 
+  <!-- Bevestiging voor destructieve acties -->
+  <dialog id="modalConfirmAction" class="modal">
+    <div class="modal-panel bg-white w-full max-w-sm rounded-xl shadow-soft p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Bevestigen</h3>
+        <button data-close class="text-gray-500">✕</button>
+      </div>
+      <p class="text-sm text-gray-600">Weet je zeker dat je deze actie wilt uitvoeren?</p>
+      <div class="mt-6 flex justify-end gap-2">
+        <button data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
+        <button id="confirmModalConfirm" class="px-4 py-2 bg-motrac-red text-white rounded-lg">Bevestigen</button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- Toast -->
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 hidden bg-gray-900 text-white px-4 py-2 rounded-lg shadow-soft"></div>
 

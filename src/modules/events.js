@@ -84,6 +84,60 @@ export function wireEvents() {
     ticketAutoCloseTimer = null;
   };
 
+  const confirmModal = $('#modalConfirmAction');
+  const confirmModalConfirmButton = $('#confirmModalConfirm');
+  const confirmActionState = {
+    type: null,
+    userId: null,
+    timerId: null
+  };
+
+  const resetConfirmActionState = () => {
+    if (confirmActionState.timerId != null) {
+      window.clearTimeout(confirmActionState.timerId);
+      confirmActionState.timerId = null;
+    }
+    confirmActionState.type = null;
+    confirmActionState.userId = null;
+    if (confirmModalConfirmButton) {
+      confirmModalConfirmButton.disabled = false;
+      confirmModalConfirmButton.removeAttribute('aria-busy');
+    }
+  };
+
+  confirmModal?.addEventListener('close', () => {
+    resetConfirmActionState();
+  });
+
+  confirmModalConfirmButton?.addEventListener('click', () => {
+    if (!confirmModal) return;
+    const { type, userId } = confirmActionState;
+    if (!type) {
+      closeModal(confirmModal);
+      return;
+    }
+
+    confirmModalConfirmButton.disabled = true;
+    confirmModalConfirmButton.setAttribute('aria-busy', 'true');
+
+    if (type === 'delete') {
+      const index = USERS.findIndex(item => item.id === userId);
+      if (index > -1) {
+        USERS.splice(index, 1);
+        renderUsers();
+      }
+    }
+
+    showToast('Actie succesvol uitgevoerd', { variant: 'success' });
+
+    if (confirmActionState.timerId != null) {
+      window.clearTimeout(confirmActionState.timerId);
+    }
+    confirmActionState.timerId = window.setTimeout(() => {
+      closeModal(confirmModal);
+    }, 2000);
+  });
+
   const userBtn = $('#userBtn');
   const userMenu = $('#userMenu');
   const setUserMenuVisibility = visible => {
@@ -516,17 +570,11 @@ export function wireEvents() {
       $('#userRole').value = user.role;
       resetUserFormErrors();
       openModal('#modalUser');
-    } else if (button.dataset.userAction === 'reset') {
-      showToast(`Wachtwoordreset aangevraagd voor ${USERS.find(item => item.id === id)?.name || 'gebruiker'}.`, {
-        variant: 'info'
-      });
-    } else if (button.dataset.userAction === 'delete') {
-      const index = USERS.findIndex(item => item.id === id);
-      if (index > -1) {
-        USERS.splice(index, 1);
-        renderUsers();
-        showToast('Gebruiker verwijderd.');
-      }
+    } else if (button.dataset.userAction === 'reset' || button.dataset.userAction === 'delete') {
+      resetConfirmActionState();
+      confirmActionState.type = button.dataset.userAction;
+      confirmActionState.userId = id;
+      openModal('#modalConfirmAction');
     }
   });
 
