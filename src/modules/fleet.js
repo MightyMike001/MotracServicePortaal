@@ -1,6 +1,6 @@
 import { LOCATIONS, FLEET, getFleetById } from '../data.js';
 import { state } from '../state.js';
-import { $, fmtDate, formatHoursHtml, formatCustomerOwnership } from '../utils.js';
+import { $, fmtDate, formatCustomerOwnership } from '../utils.js';
 import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
 import { showToast } from './ui/toast.js';
 
@@ -326,7 +326,7 @@ function filteredFleet() {
 
 function renderEmptyState(tableBody) {
   tableBody.innerHTML =
-    '<tr><td colspan="12" class="py-6 px-3 text-center text-gray-500">Geen resultaten binnen het huidige filter.</td></tr>';
+    '<tr><td colspan="5" class="py-6 px-3 text-center text-gray-500">Geen resultaten binnen het huidige filter.</td></tr>';
 }
 
 /**
@@ -334,45 +334,32 @@ function renderEmptyState(tableBody) {
  */
 function renderRows(tableBody, entries) {
   const rows = entries.map(truck => {
-    const activityList = Array.isArray(truck.activity) ? truck.activity : [];
-    const openCount =
-      typeof truck.openActivityCount === 'number'
-        ? truck.openActivityCount
-        : activityList.filter(activity => activity?.status === 'Open').length;
     return `
       <tr class="border-b hover:bg-gray-50 focus-within:bg-gray-50 transition-colors">
         <td class="py-3 px-3" data-label="Serienummer / Referentie">
-          <button class="text-left text-gray-900 hover:underline focus:underline focus:outline-none" data-open-detail="${truck.id}">
-            <div class="font-medium">${truck.id}</div>
-            <div class="text-xs text-gray-500">${truck.ref}</div>
-            <div class="text-xs text-gray-400">Voor: ${formatCustomerOwnership(truck.customer, truck.fleetName || '—')}</div>
-          </button>
+          <div class="flex items-start gap-3">
+            <button class="text-left text-gray-900 hover:underline focus:underline focus:outline-none flex-1" data-open-detail="${truck.id}">
+              <div class="font-medium">${truck.id}</div>
+              <div class="text-xs text-gray-500">${truck.ref}</div>
+              <div class="text-xs text-gray-400">Voor: ${formatCustomerOwnership(truck.customer, truck.fleetName || '—')}</div>
+            </button>
+            <div class="relative inline-block kebab">
+              <button class="px-2 py-1 border rounded-lg" aria-haspopup="true" aria-expanded="false" aria-label="Acties voor ${truck.id}">⋮</button>
+              <div class="kebab-menu hidden absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft z-10">
+                <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="newTicket" data-id="${truck.id}">Melding aanmaken</button>
+                <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="updateOdo" data-id="${truck.id}">Urenstand doorgeven</button>
+                <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="editRef" data-id="${truck.id}">Uw referentie wijzigen</button>
+                <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="showContract" data-id="${truck.id}">Contract inzien</button>
+                <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="editBmw" data-id="${truck.id}">BMWT-status bewerken</button>
+                <button class="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600" data-action="inactive" data-id="${truck.id}">Verwijderen uit lijst</button>
+              </div>
+            </div>
+          </div>
         </td>
         <td class="py-3 px-3" data-label="Modeltype">${truck.modelType || '—'}</td>
         <td class="py-3 px-3" data-label="Model">${truck.model}</td>
         <td class="py-3 px-3" data-label="BMWT‑status">${truck.bmwStatus}</td>
         <td class="py-3 px-3" data-label="BMWT‑vervaldatum">${fmtDate(truck.bmwExpiry)}</td>
-        <td class="py-3 px-3" data-label="Locatie">${truck.location || '—'}</td>
-        <td class="py-3 px-3" data-label="Urenstand (datum)">${formatHoursHtml(truck.hours, truck.hoursDate)}</td>
-        <td class="py-3 px-3" data-label="Contractnummer">${truck.contract?.nummer || '—'}</td>
-        <td class="py-3 px-3" data-label="Contract startdatum">${fmtDate(truck.contract?.start)}</td>
-        <td class="py-3 px-3" data-label="Contract einddatum">${fmtDate(truck.contract?.eind)}</td>
-        <td class="py-3 px-3" data-label="Openstaande meldingen">
-          <button class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-red-700 text-white font-semibold shadow-sm border border-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" title="Open meldingen" data-open-detail="${truck.id}">${openCount}</button>
-        </td>
-        <td class="py-3 px-3 sm:text-right" data-label="Acties">
-          <div class="relative inline-block kebab">
-            <button class="px-2 py-1 border rounded-lg" aria-haspopup="true" aria-expanded="false" aria-label="Acties voor ${truck.id}">⋮</button>
-            <div class="kebab-menu hidden absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft z-10">
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="newTicket" data-id="${truck.id}">Melding aanmaken</button>
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="updateOdo" data-id="${truck.id}">Urenstand doorgeven</button>
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="editRef" data-id="${truck.id}">Uw referentie wijzigen</button>
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="showContract" data-id="${truck.id}">Contract inzien</button>
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="editBmw" data-id="${truck.id}">BMWT-status bewerken</button>
-              <button class="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600" data-action="inactive" data-id="${truck.id}">Verwijderen uit lijst</button>
-            </div>
-          </div>
-        </td>
       </tr>`;
   });
 
