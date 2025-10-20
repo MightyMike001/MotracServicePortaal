@@ -5,6 +5,8 @@ import { showToast } from './ui/toast.js';
 import { canManageUsers, canApproveAccountRequests } from './access.js';
 
 const ROLE_OPTIONS = ['Beheerder', 'Gebruiker', 'Vlootbeheerder', 'Klant'];
+const ALL_LOCATIONS_OPTION = 'Alle locaties';
+const ALL_ROLES_OPTION = 'Alle portaalrechten';
 
 const SORT_SELECTORS = {
   name: user => user.name || '',
@@ -191,6 +193,46 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
 }
 
 /**
+ * Builds the option list for the location filter based on the current dataset.
+ */
+function getLocationOptions() {
+  const uniqueLocations = new Set();
+  USERS.forEach(user => {
+    if (user?.location) {
+      uniqueLocations.add(user.location);
+    }
+  });
+  return [ALL_LOCATIONS_OPTION, ...Array.from(uniqueLocations).sort((a, b) => a.localeCompare(b, 'nl-NL'))];
+}
+
+/**
+ * Builds the option list for the role filter based on the current dataset.
+ */
+function getRoleOptions() {
+  const uniqueRoles = new Set();
+  USERS.forEach(user => {
+    if (user?.role) {
+      uniqueRoles.add(user.role);
+    }
+  });
+  return [ALL_ROLES_OPTION, ...Array.from(uniqueRoles).sort((a, b) => a.localeCompare(b, 'nl-NL'))];
+}
+
+function setSelectOptions(select, options, preferredValue) {
+  if (!select) return preferredValue;
+
+  const currentOptions = Array.from(select.options).map(option => option.value);
+  const isSame = currentOptions.length === options.length && currentOptions.every((value, index) => value === options[index]);
+  if (!isSame) {
+    select.innerHTML = options.map(option => `<option value="${option}">${option}</option>`).join('');
+  }
+
+  const nextValue = options.includes(preferredValue) ? preferredValue : options[0] ?? '';
+  select.value = nextValue;
+  return nextValue;
+}
+
+/**
  * Ensures the search inputs above the users table exist and stay in sync.
  */
 function ensureSearchControls() {
@@ -205,59 +247,126 @@ function ensureSearchControls() {
     const card = document.createElement('div');
     card.className = 'bg-white rounded-xl shadow-soft p-4';
     card.innerHTML = `
-      <label for="usersSearch" class="block text-sm text-gray-600">Zoek gebruiker…</label>
-      <div class="mt-1 flex gap-2">
-        <input id="usersSearch" type="search" class="flex-1 border rounded-lg px-3 py-2" placeholder="Naam, e-mail of telefoon" />
-        <button id="usersSearchBtn" class="px-4 py-2 bg-gray-900 text-white rounded-lg" type="button" title="Zoek binnen gebruikers">Zoeken</button>
-        <button id="usersSearchReset" class="px-4 py-2 border rounded-lg" type="button" title="Wis zoekopdracht">Reset</button>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label for="usersSearch" class="block text-sm text-gray-600">Zoek gebruiker…</label>
+          <div class="mt-1 flex flex-col sm:flex-row gap-2">
+            <input id="usersSearch" type="search" class="flex-1 border rounded-lg px-3 py-2" placeholder="Naam, e-mail of telefoon" />
+            <button id="usersSearchReset" class="px-4 py-2 border border-gray-300 rounded-lg font-medium bg-white text-gray-700" type="button" title="Wis filters en zoekopdracht">Alles wissen</button>
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <label class="flex flex-col text-sm text-gray-600 gap-1">
+            <span>Locatie</span>
+            <select id="usersLocationFilter" class="border rounded-lg px-3 py-2"></select>
+          </label>
+          <label class="flex flex-col text-sm text-gray-600 gap-1">
+            <span>Portaalrechten</span>
+            <select id="usersRoleFilter" class="border rounded-lg px-3 py-2"></select>
+          </label>
+        </div>
       </div>
     `;
     header.insertAdjacentElement('afterend', card);
     input = card.querySelector('#usersSearch');
-    const searchBtn = card.querySelector('#usersSearchBtn');
     const resetBtn = card.querySelector('#usersSearchReset');
+    const locationSelect = card.querySelector('#usersLocationFilter');
+    const roleSelect = card.querySelector('#usersRoleFilter');
 
-    const applySearch = () => {
-      state.usersSearchQuery = input.value.trim().toLowerCase();
+    input.addEventListener('input', () => {
+      const nextQuery = input.value;
+      if (state.usersSearchQuery === nextQuery) return;
+      state.usersSearchQuery = nextQuery;
       state.usersPage = 1;
       renderUsers();
-    };
+    });
 
     input.addEventListener('keydown', event => {
       if (event.key === 'Enter') {
         event.preventDefault();
-        applySearch();
       }
     });
-    searchBtn.addEventListener('click', event => {
-      event.preventDefault();
-      applySearch();
-    });
-    resetBtn.addEventListener('click', event => {
-      event.preventDefault();
-      input.value = '';
-      state.usersSearchQuery = '';
+
+    locationSelect?.addEventListener('change', () => {
+      const nextValue = locationSelect.value;
+      if (state.usersLocationFilter === nextValue) return;
+      state.usersLocationFilter = nextValue;
       state.usersPage = 1;
       renderUsers();
     });
+
+    roleSelect?.addEventListener('change', () => {
+      const nextValue = roleSelect.value;
+      if (state.usersRoleFilter === nextValue) return;
+      state.usersRoleFilter = nextValue;
+      state.usersPage = 1;
+      renderUsers();
+    });
+
+    resetBtn?.addEventListener('click', event => {
+      event.preventDefault();
+      input.value = '';
+      if (locationSelect) {
+        locationSelect.value = ALL_LOCATIONS_OPTION;
+      }
+      if (roleSelect) {
+        roleSelect.value = ALL_ROLES_OPTION;
+      }
+      state.usersSearchQuery = '';
+      state.usersLocationFilter = ALL_LOCATIONS_OPTION;
+      state.usersRoleFilter = ALL_ROLES_OPTION;
+      state.usersPage = 1;
+      renderUsers();
+      input.focus();
+    });
   }
 
-  input.value = state.usersSearchQuery || '';
+  const locationSelect = $('#usersLocationFilter');
+  const roleSelect = $('#usersRoleFilter');
+
+  const resolvedLocation = setSelectOptions(locationSelect, getLocationOptions(), state.usersLocationFilter);
+  if (resolvedLocation !== state.usersLocationFilter) {
+    state.usersLocationFilter = resolvedLocation;
+  }
+
+  const resolvedRole = setSelectOptions(roleSelect, getRoleOptions(), state.usersRoleFilter);
+  if (resolvedRole !== state.usersRoleFilter) {
+    state.usersRoleFilter = resolvedRole;
+  }
+
+  if (input) {
+    input.value = state.usersSearchQuery || '';
+  }
+
   return input;
 }
 
+
 /**
- * Filters the in-memory user dataset using the active search query.
+ * Filters the in-memory user dataset using the active query and dropdown filters.
  */
 function filterUsers() {
   const query = (state.usersSearchQuery || '').trim().toLowerCase();
-  if (!query) {
-    return USERS;
-  }
+  const locationFilter = state.usersLocationFilter;
+  const roleFilter = state.usersRoleFilter;
+
   return USERS.filter(user => {
-    return [user.name, user.email, user.phone, user.role]
-      .filter(Boolean)
-      .some(value => String(value).toLowerCase().includes(query));
+    const matchesQuery = !query
+      || [user.name, user.email, user.phone, user.role]
+        .filter(Boolean)
+        .some(value => String(value).toLowerCase().includes(query));
+
+    if (!matchesQuery) {
+      return false;
+    }
+
+    const matchesLocation = !locationFilter || locationFilter === ALL_LOCATIONS_OPTION || user.location === locationFilter;
+    if (!matchesLocation) {
+      return false;
+    }
+
+    const matchesRole = !roleFilter || roleFilter === ALL_ROLES_OPTION || user.role === roleFilter;
+    return matchesRole;
   });
 }
 

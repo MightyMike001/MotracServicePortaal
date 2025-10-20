@@ -5,6 +5,8 @@ export const state = {
   usersPage: 1,
   usersPageSize: 10,
   usersSearchQuery: '',
+  usersLocationFilter: 'Alle locaties',
+  usersRoleFilter: 'Alle portaalrechten',
   usersSortKey: 'name',
   usersSortDirection: 'asc',
   editUserId: null,
