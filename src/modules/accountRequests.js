@@ -1,6 +1,6 @@
 import { USERS } from '../data.js';
 import { state } from '../state.js';
-import { $, closeModals } from '../utils.js';
+import { $, closeModals, toggleButtonLoading } from '../utils.js';
 import { showToast } from './ui/toast.js';
 import { renderAccountRequests, renderUsers } from './users.js';
 import { getFleetSummaryById } from './tabs.js';
@@ -33,7 +33,7 @@ export async function handleAccountRequestSubmit(event) {
   const form = event.target;
   const submitButton = form.querySelector('[type="submit"]');
   if (submitButton) {
-    submitButton.disabled = true;
+    toggleButtonLoading(submitButton, true, { label: 'Versturen…' });
   }
 
   try {
@@ -64,7 +64,7 @@ export async function handleAccountRequestSubmit(event) {
     showToast('Het versturen van de accountaanvraag is mislukt. Probeer het opnieuw.');
   } finally {
     if (submitButton) {
-      submitButton.disabled = false;
+      toggleButtonLoading(submitButton, false);
     }
   }
 }
@@ -94,6 +94,7 @@ export async function handleAccountRequestAction(button) {
 
   if (action === 'reject') {
     toggleButtonsDisabled(true);
+    toggleButtonLoading(button, true, { label: 'Afwijzen…' });
     try {
       const updatedRequest = await rejectAccountRequest({
         id: requestId,
@@ -110,6 +111,7 @@ export async function handleAccountRequestAction(button) {
       showToast('Aanvraag kon niet worden geweigerd. Probeer het opnieuw.');
     } finally {
       toggleButtonsDisabled(false);
+      toggleButtonLoading(button, false);
     }
     return;
   }
@@ -126,6 +128,7 @@ export async function handleAccountRequestAction(button) {
   const newUserLocation = fleetSummary?.locations?.[0] || request.organisation || '—';
 
   toggleButtonsDisabled(true);
+  toggleButtonLoading(button, true, { label: 'Toekennen…' });
 
   try {
     const updatedRequest = await approveAccountRequest({
@@ -156,5 +159,6 @@ export async function handleAccountRequestAction(button) {
     showToast('Account kon niet worden toegekend. Probeer het opnieuw.');
   } finally {
     toggleButtonsDisabled(false);
+    toggleButtonLoading(button, false);
   }
 }

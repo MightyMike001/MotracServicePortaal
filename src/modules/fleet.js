@@ -1,6 +1,6 @@
 import { LOCATIONS, FLEET, getFleetById } from '../data.js';
 import { state } from '../state.js';
-import { $, fmtDate, formatCustomerOwnership, closeModal } from '../utils.js';
+import { $, fmtDate, formatCustomerOwnership, closeModal, renderStatusBadge, getToneForBmwStatus } from '../utils.js';
 import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
 import { showToast } from './ui/toast.js';
 
@@ -367,7 +367,7 @@ function renderRows(tableBody, entries) {
               <div class="text-xs text-gray-400">Voor: ${formatCustomerOwnership(truck.customer, truck.fleetName || '—')}</div>
             </button>
             <div class="relative inline-block kebab">
-              <button class="px-2 py-1 border rounded-lg" aria-haspopup="true" aria-expanded="false" aria-label="Acties voor ${truck.id}">⋮</button>
+              <button class="px-2 py-1 border rounded-lg" type="button" title="Meer acties voor ${truck.id}" aria-haspopup="true" aria-expanded="false" aria-label="Acties voor ${truck.id}">⋮</button>
               <div class="kebab-menu hidden absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-soft z-10">
                 <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="newTicket" data-id="${truck.id}">Melding aanmaken</button>
                 <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-action="updateOdo" data-id="${truck.id}">Urenstand doorgeven</button>
@@ -381,7 +381,7 @@ function renderRows(tableBody, entries) {
         </td>
         <td class="py-3 px-3" data-label="Modeltype">${truck.modelType || '—'}</td>
         <td class="py-3 px-3" data-label="Model">${truck.model}</td>
-        <td class="py-3 px-3" data-label="BMWT‑status">${truck.bmwStatus}</td>
+        <td class="py-3 px-3" data-label="BMWT‑status">${renderStatusBadge(truck.bmwStatus, getToneForBmwStatus(truck.bmwStatus))}</td>
         <td class="py-3 px-3" data-label="BMWT‑vervaldatum">${fmtDate(truck.bmwExpiry)}</td>
       </tr>`;
   });

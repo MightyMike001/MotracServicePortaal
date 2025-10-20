@@ -1,6 +1,6 @@
 import { FLEET, getFleetById } from '../data.js';
 import { state } from '../state.js';
-import { $, fmtDate } from '../utils.js';
+import { $, fmtDate, renderStatusBadge, getToneForActivityStatus } from '../utils.js';
 import { filterFleetByAccess, canViewFleetAsset } from './access.js';
 import { renderFleet } from './fleet.js';
 import { syncFiltersToUrl } from './filterSync.js';
@@ -411,12 +411,7 @@ export function closeActivityDetail() {
 }
 
 function formatCardFooter(activity) {
-  const statusClass =
-    activity.status === 'Open'
-      ? 'bg-red-50 text-red-700'
-      : activity.status === 'Afgerond'
-      ? 'bg-green-50 text-green-700'
-      : 'bg-amber-50 text-amber-700';
+  const statusBadge = renderStatusBadge(activity.status, getToneForActivityStatus(activity.status));
   const attachmentCount = Array.isArray(activity.attachments) ? activity.attachments.length : 0;
   const attachmentBadge =
     attachmentCount > 0
@@ -426,7 +421,7 @@ function formatCardFooter(activity) {
       : '';
   return `
     <span class="inline-flex items-center">
-      <span class="text-xs px-2 py-1 rounded-full ${statusClass}">${activity.status}</span>
+      ${statusBadge}
       ${attachmentBadge}
     </span>`;
 }

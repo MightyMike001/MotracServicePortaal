@@ -43,6 +43,65 @@ export const formatOdoValue = formatNumericValue;
 export const formatOdoHtml = formatNumericHtml;
 export const formatOdoLabel = formatNumericLabel;
 
+const STATUS_TONE_CLASSES = {
+  success: 'status-badge status-badge--success',
+  danger: 'status-badge status-badge--danger',
+  warning: 'status-badge status-badge--warning',
+  info: 'status-badge status-badge--info'
+};
+
+export function renderStatusBadge(label, tone = 'info') {
+  const key = typeof tone === 'string' && tone ? tone.toLowerCase() : 'info';
+  const className = STATUS_TONE_CLASSES[key] || STATUS_TONE_CLASSES.info;
+  const text = typeof label === 'string' ? label : String(label ?? '');
+  return `<span class="${className}">${text}</span>`;
+}
+
+export function getToneForActivityStatus(status) {
+  const normalised = (status || '').toLowerCase();
+  if (normalised === 'afgerond') return 'success';
+  if (normalised === 'open' || normalised === 'geannuleerd') return 'danger';
+  if (normalised === 'in behandeling') return 'warning';
+  return 'info';
+}
+
+export function getToneForBmwStatus(status) {
+  const normalised = (status || '').toLowerCase();
+  if (normalised === 'goedgekeurd') return 'success';
+  if (normalised === 'afkeur' || normalised === 'afgekeurd') return 'danger';
+  if (normalised === 'in behandeling') return 'warning';
+  return 'info';
+}
+
+export function getToneForAccountRequestStatus(status) {
+  const normalised = (status || '').toLowerCase();
+  if (normalised === 'approved') return 'success';
+  if (normalised === 'rejected') return 'danger';
+  if (normalised === 'pending') return 'warning';
+  return 'info';
+}
+
+export function toggleButtonLoading(button, isLoading, { label } = {}) {
+  if (!(button instanceof HTMLElement)) return;
+  if (isLoading) {
+    if (!button.dataset.loadingOriginal) {
+      button.dataset.loadingOriginal = button.innerHTML;
+    }
+    const textSource = typeof label === 'string' && label.trim() ? label : (button.textContent || '').trim() || 'Bezig…';
+    button.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span class="button-loading__label">${textSource}</span>`;
+    button.disabled = true;
+    button.classList.add('button--loading');
+    button.setAttribute('aria-busy', 'true');
+  } else {
+    if (button.dataset.loadingOriginal != null) {
+      button.innerHTML = button.dataset.loadingOriginal;
+    }
+    button.disabled = false;
+    button.classList.remove('button--loading');
+    button.removeAttribute('aria-busy');
+  }
+}
+
 const toggleModalVisibility = (modal, shouldOpen) => {
   if (!(modal instanceof Element)) return;
   if (modal instanceof HTMLDialogElement) {

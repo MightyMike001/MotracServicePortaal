@@ -1,6 +1,16 @@
 import { getFleetById } from '../data.js';
 import { state } from '../state.js';
-import { $, $$, fmtDate, kv, formatHoursHtml, formatCustomerOwnership } from '../utils.js';
+import {
+  $,
+  $$,
+  fmtDate,
+  kv,
+  formatHoursHtml,
+  formatCustomerOwnership,
+  renderStatusBadge,
+  getToneForBmwStatus,
+  getToneForActivityStatus
+} from '../utils.js';
 import { canViewFleetAsset } from './access.js';
 
 export function openDetail(id) {
@@ -36,7 +46,7 @@ export function setDetailTab(tab) {
         ${infoRow('Modeltype', truck.modelType || '—', true)}
         ${infoRow('Model', truck.model)}
         ${infoRow('Urenstand (datum)', formatHoursHtml(truck.hours, truck.hoursDate), false, 'updateOdoFromDetail')}
-        ${infoRow('BMWT‑status', truck.bmwStatus)}
+        ${infoRow('BMWT‑status', renderStatusBadge(truck.bmwStatus, getToneForBmwStatus(truck.bmwStatus)))}
         ${infoRow('BMWT‑vervaldatum', fmtDate(truck.bmwExpiry))}
       </div>`;
   } else if (tab === 'act') {
@@ -47,7 +57,7 @@ export function setDetailTab(tab) {
           <div class="text-xs text-gray-500">${fmtDate(activity.date)} • ${activity.type}</div>
           <div class="font-medium">${activity.id}</div>
           <div class="text-sm">${activity.desc}</div>
-          <div class="mt-1 text-xs ${activity.status === 'Open' ? 'text-motrac-red' : 'text-green-700'}">${activity.status}</div>
+          <div class="mt-2">${renderStatusBadge(activity.status, getToneForActivityStatus(activity.status))}</div>
         </div>`).join('')
       : '<div class="text-gray-500">Geen actieve meldingen</div>';
   } else {

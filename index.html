@@ -213,6 +213,7 @@
               aria-haspopup="menu"
               aria-expanded="false"
               aria-controls="userMenu"
+              title="Open gebruikersmenu"
             >
               <span id="userStatusIndicator" class="user-status-indicator user-status-indicator--signed-out" aria-hidden="true"></span>
               <span id="currentUserName" class="text-sm">Niet ingelogd</span>
@@ -258,12 +259,21 @@
                   placeholder="Serienummer of model"
                   class="flex-1 border rounded-l-lg px-3 py-2"
                 />
-                <button id="searchBtn" class="px-4 py-2 bg-gray-900 text-white rounded-r-lg hover:opacity-95">🔍</button>
+                <button
+                  id="searchBtn"
+                  class="px-4 py-2 bg-gray-900 text-white rounded-r-lg hover:opacity-95"
+                  type="button"
+                  title="Zoek binnen de vloot"
+                  aria-label="Zoek binnen de vloot"
+                >
+                  🔍
+                </button>
               </div>
               <button
                 id="resetFiltersBtn"
                 type="button"
                 class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                title="Filters terugzetten naar standaard"
               >
                 Reset
               </button>
@@ -299,7 +309,15 @@
             <label class="block text-sm text-gray-600">Zoek melding…</label>
             <div class="mt-1 flex">
               <input id="activitySearchInput" type="text" placeholder="Serienummer, nummer of omschrijving" class="flex-1 border rounded-l-lg px-3 py-2" />
-              <button id="activitySearchBtn" class="px-4 py-2 bg-gray-900 text-white rounded-r-lg hover:opacity-95">🔍</button>
+              <button
+                id="activitySearchBtn"
+                class="px-4 py-2 bg-gray-900 text-white rounded-r-lg hover:opacity-95"
+                type="button"
+                title="Zoek binnen meldingen"
+                aria-label="Zoek binnen meldingen"
+              >
+                🔍
+              </button>
             </div>
           </div>
         </div>
@@ -379,9 +397,9 @@
           </table>
         </div>
         <div class="flex justify-end items-center gap-2 text-sm">
-          <button id="usersPrev" class="px-3 py-1 border rounded-lg">Vorige</button>
+          <button id="usersPrev" class="px-3 py-1 border rounded-lg" title="Vorige pagina gebruikers">Vorige</button>
           <span id="usersPageInfo" class="text-gray-500"></span>
-          <button id="usersNext" class="px-3 py-1 border rounded-lg">Volgende</button>
+          <button id="usersNext" class="px-3 py-1 border rounded-lg" title="Volgende pagina gebruikers">Volgende</button>
         </div>
       </section>
 
@@ -642,10 +660,24 @@
   <!-- Toast -->
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 hidden bg-gray-900 text-white px-4 py-2 rounded-lg shadow-soft"></div>
 
-  <button id="themeToggle" class="theme-toggle" type="button" aria-label="Schakel naar donker thema">
+  <button id="themeToggle" class="theme-toggle" type="button" aria-label="Schakel naar donker thema" title="Schakel tussen licht en donker thema">
     <span class="theme-toggle__icon" aria-hidden="true">🌞</span>
     <span class="theme-toggle__label">Donker thema</span>
   </button>
+
+  <div
+    id="globalLoadingOverlay"
+    class="global-loader hidden"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+    aria-hidden="true"
+  >
+    <div class="global-loader__panel">
+      <span class="global-loader__spinner" aria-hidden="true"></span>
+      <p id="globalLoadingMessage" class="global-loader__message">Data wordt geladen…</p>
+    </div>
+  </div>
 
   <script type="module" src="src/main.js"></script>
 </body>
