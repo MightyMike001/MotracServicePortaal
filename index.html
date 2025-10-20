@@ -34,7 +34,7 @@
   <script>
     (() => {
       try {
-        const storageKey = 'motrac-theme';
+        const storageKey = 'theme';
         const storedTheme = localStorage.getItem(storageKey);
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {

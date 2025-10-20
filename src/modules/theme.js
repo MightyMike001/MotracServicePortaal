@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'motrac-theme';
+const STORAGE_KEY = 'theme';
 const DARK = 'dark';
 const LIGHT = 'light';
 
