@@ -1,6 +1,17 @@
 import { LOCATIONS, FLEET, getFleetById } from '../data.js';
 import { state } from '../state.js';
-import { $, fmtDate, formatCustomerOwnership, closeModal, renderStatusBadge, getToneForBmwStatus } from '../utils.js';
+import {
+  $,
+  fmtDate,
+  formatCustomerOwnership,
+  closeModal,
+  renderStatusBadge,
+  getToneForBmwStatus,
+  createCsvContent,
+  downloadBlob,
+  createTablePdfBlob,
+  buildExportFilename
+} from '../utils.js';
 import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
 import { showToast } from './ui/toast.js';
 
@@ -453,6 +464,50 @@ export function renderFleet() {
   }
 
   renderRows(tableBody, entries);
+}
+
+function getFleetEntriesForExport() {
+  return filteredFleet();
+}
+
+function buildFleetExportRows(entries) {
+  return entries.map(truck => [
+    truck.id || '',
+    truck.ref || '',
+    truck.modelType || '',
+    truck.model || '',
+    truck.location || '',
+    truck.bmwStatus || '',
+    fmtDate(truck.bmwExpiry)
+  ]);
+}
+
+export function exportFleet(format) {
+  const allowedFormats = new Set(['csv', 'pdf']);
+  if (!allowedFormats.has(format)) {
+    showToast('Onbekend exportformaat.', { variant: 'error' });
+    return;
+  }
+
+  const entries = getFleetEntriesForExport();
+  if (!entries.length) {
+    showToast('Geen gegevens beschikbaar voor export.', { variant: 'warning' });
+    return;
+  }
+
+  const headers = ['Serienummer', 'Referentie', 'Modeltype', 'Model', 'Locatie', 'BMWT-status', 'BMWT-vervaldatum'];
+  const rows = buildFleetExportRows(entries);
+
+  if (format === 'csv') {
+    const csvContent = createCsvContent(headers, rows);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, buildExportFilename('vlootoverzicht', 'csv'));
+  } else {
+    const pdfBlob = createTablePdfBlob({ title: 'Vlootoverzicht', headers, rows });
+    downloadBlob(pdfBlob, buildExportFilename('vlootoverzicht', 'pdf'));
+  }
+
+  showToast('Export voltooid', { variant: 'success' });
 }
 
 /**

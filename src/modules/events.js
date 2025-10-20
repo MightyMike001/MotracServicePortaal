@@ -2,7 +2,7 @@ import { USERS, getFleetById } from '../data.js';
 import { state } from '../state.js';
 import { $, $$, fmtDate, openModal, closeModals, closeModal, kv, formatHoursLabel } from '../utils.js';
 import { showToast } from './ui/toast.js';
-import { renderFleet, updateLocationFilter, openBmwEditor } from './fleet.js';
+import { renderFleet, updateLocationFilter, openBmwEditor, exportFleet } from './fleet.js';
 import { applyFiltersFromUrl, resetFilters, syncFiltersToUrl } from './filterSync.js';
 import {
   renderActivity,
@@ -14,7 +14,7 @@ import {
   resetTicketAttachments,
   refreshMeldingen
 } from './activity.js';
-import { renderUsers, saveUser } from './users.js';
+import { renderUsers, saveUser, exportUsers } from './users.js';
 import { openDetail, refreshDetail } from './detail.js';
 import { canViewFleetAsset } from './access.js';
 import { switchMainTab } from './tabs.js';
@@ -265,6 +265,14 @@ export function wireEvents() {
 
   $('#resetFiltersBtn')?.addEventListener('click', () => {
     handleLocationChange('Alle locaties');
+  });
+
+  $('#fleetExportCsv')?.addEventListener('click', () => {
+    exportFleet('csv');
+  });
+
+  $('#fleetExportPdf')?.addEventListener('click', () => {
+    exportFleet('pdf');
   });
 
   document.addEventListener('keydown', event => {
@@ -688,6 +696,14 @@ export function wireEvents() {
   $('#usersPageSize')?.addEventListener('change', () => {
     state.usersPage = 1;
     renderUsers();
+  });
+
+  $('#usersExportCsv')?.addEventListener('click', () => {
+    exportUsers('csv');
+  });
+
+  $('#usersExportPdf')?.addEventListener('click', () => {
+    exportUsers('pdf');
   });
 
   $('#moduleCycleBtn')?.addEventListener('click', () => {

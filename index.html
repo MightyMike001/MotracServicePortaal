@@ -286,6 +286,23 @@
           </div>
         </div>
 
+        <div class="flex flex-wrap justify-end gap-2">
+          <button
+            id="fleetExportCsv"
+            type="button"
+            class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Exporteer naar CSV
+          </button>
+          <button
+            id="fleetExportPdf"
+            type="button"
+            class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Exporteer naar PDF
+          </button>
+        </div>
+
         <!-- Table -->
         <div class="bg-white rounded-xl shadow-soft p-2 overflow-auto responsive-table">
           <table class="min-w-full text-sm">
@@ -333,10 +350,26 @@
 
       <!-- USERS -->
       <section id="tab-users" class="hidden space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Portalgebruikers</h2>
-          <div class="flex items-center gap-2">
-            <label class="text-sm">Records per page</label>
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-lg font-semibold">Portalgebruikers</h2>
+            <button
+              id="usersExportCsv"
+              type="button"
+              class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Exporteer naar CSV
+            </button>
+            <button
+              id="usersExportPdf"
+              type="button"
+              class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Exporteer naar PDF
+            </button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 md:justify-end">
+            <label class="text-sm" for="usersPageSize">Records per page</label>
             <select id="usersPageSize" class="border rounded-lg px-2 py-1">
               <option>5</option>
               <option selected>10</option>
