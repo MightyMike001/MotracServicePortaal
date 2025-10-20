@@ -67,11 +67,15 @@ function renderHistory(historyEl, resolvedRequests = []) {
       const statusBadge = renderStatusBadge(badgeLabel, statusTone);
       const statusDetail =
         request.status === 'approved'
-          ? `Toegekend als ${request.assignedRole || 'onbekend'}`
+          ? `Goedgekeurd`
           : 'Afgewezen';
       const fleetLabel =
         request.assignedFleetName || request.organisation || (request.assignedFleetId ? '—' : 'Geen specifieke vloot');
       const passwordInfo = request.passwordSetAt ? ` • Wachtwoord sinds ${formatDateTime(request.passwordSetAt)}` : '';
+      const roleInfo =
+        request.status === 'approved'
+          ? `<p class="text-xs text-gray-600">Rol: ${request.assignedRole || 'Onbekend'}</p>`
+          : '';
       return `
         <div class="flex items-start justify-between gap-3 border border-gray-200 rounded-lg px-3 py-2">
           <div>
@@ -80,6 +84,7 @@ function renderHistory(historyEl, resolvedRequests = []) {
               ${statusBadge}
             </div>
             <p class="text-xs text-gray-500">${statusDetail} • ${formatDateTime(request.completedAt)}${passwordInfo}</p>
+            ${roleInfo}
           </div>
           <span class="text-xs text-gray-500">${fleetLabel}</span>
         </div>`;
@@ -155,7 +160,16 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
           </div>
           <div class="grid sm:grid-cols-2 gap-3">
             <label class="text-xs uppercase text-gray-500 tracking-wide flex flex-col gap-2">
-              Toekenning
+              <span class="flex items-center gap-2">
+                Toekenning
+                <span
+                  class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-xs font-semibold text-gray-500 cursor-help"
+                  title="Gebruiker = alleen eigen vloot bekijken, Beheerder = alle klanten beheren."
+                  aria-label="Toelichting rolopties: Gebruiker ziet alleen eigen vloot, Beheerder beheert alle klanten."
+                >
+                  ?
+                </span>
+              </span>
               <select class="border rounded-lg px-3 py-2 text-sm" data-request-role>
                 ${ROLE_OPTIONS.map(role => `<option value="${role}" ${role === defaultRole ? 'selected' : ''}>${role}</option>`).join('')}
               </select>
