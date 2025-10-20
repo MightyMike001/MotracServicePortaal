@@ -11,7 +11,6 @@ export function setMainTab(tab) {
   $('#tab-vloot')?.classList.toggle('hidden', tab !== 'vloot');
   $('#tab-activiteit')?.classList.toggle('hidden', tab !== 'activiteit');
   $('#tab-users')?.classList.toggle('hidden', tab !== 'users');
-  $('#truckDetail')?.classList.add('hidden');
 }
 
 export function updateModuleCycleButton(allowedTabs, activeTab) {

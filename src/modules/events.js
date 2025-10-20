@@ -15,7 +15,7 @@ import {
   refreshMeldingen
 } from './activity.js';
 import { renderUsers, saveUser } from './users.js';
-import { openDetail, setDetailTab } from './detail.js';
+import { openDetail, refreshDetail } from './detail.js';
 import { canViewFleetAsset } from './access.js';
 import { switchMainTab } from './tabs.js';
 import { handleLoginSubmit, handlePersonaLogin, signOut } from './auth.js';
@@ -314,7 +314,12 @@ export function wireEvents() {
     const truck = getAccessibleTruck(id);
     if (!truck) return;
 
+    const detailModal = $('#vehicleDetailModal');
+
     if (action === 'newTicket' || action === 'newTicketFromDetail') {
+      if (action === 'newTicketFromDetail') {
+        closeModal(detailModal);
+      }
       resetTicketForm(truck.id);
       cancelTicketAutoClose();
       openModal('#modalTicket');
@@ -322,6 +327,9 @@ export function wireEvents() {
     }
 
     if (action === 'updateOdo' || action === 'updateOdoFromDetail') {
+      if (action === 'updateOdoFromDetail') {
+        closeModal(detailModal);
+      }
       const odoCurrent = $('#odoCurrent');
       if (odoCurrent) {
         odoCurrent.textContent = formatHoursLabel(truck.hours, truck.hoursDate);
@@ -339,6 +347,9 @@ export function wireEvents() {
     }
 
     if (action === 'editRef' || action === 'editRefFromDetail') {
+      if (action === 'editRefFromDetail') {
+        closeModal(detailModal);
+      }
       const refCurrent = $('#refCurrent');
       if (refCurrent) {
         refCurrent.textContent = truck.ref;
@@ -378,6 +389,21 @@ export function wireEvents() {
 
     if (action === 'editBmw') {
       openBmwEditor(id);
+      return;
+    }
+
+    if (action === 'markOutOfService') {
+      closeModal(detailModal);
+      truck.active = false;
+      renderFleet();
+      renderActivity();
+      showToast(`${truck.id} is gemarkeerd als buiten gebruik.`, { variant: 'info' });
+      return;
+    }
+
+    if (action === 'downloadReport') {
+      closeModal(detailModal);
+      showToast('Rapport wordt klaargezet voor download.', { variant: 'success' });
       return;
     }
   });
@@ -537,9 +563,9 @@ export function wireEvents() {
     truck.hoursDate = new Date().toISOString();
     truck.odo = value;
     truck.odoDate = truck.hoursDate;
-    closeModals();
+    closeModal($('#modalOdo'));
     renderFleet();
-    setDetailTab('info');
+    refreshDetail();
     showToast('Urenstand bijgewerkt.');
   });
 
@@ -557,9 +583,9 @@ export function wireEvents() {
       return;
     }
     truck.ref = value;
-    closeModals();
+    closeModal($('#modalRef'));
     renderFleet();
-    setDetailTab('info');
+    refreshDetail();
     showToast('Referentie bijgewerkt.');
   });
 
@@ -663,12 +689,6 @@ export function wireEvents() {
     state.usersPage = 1;
     renderUsers();
   });
-
-  $('#backToFleet')?.addEventListener('click', () => {
-    switchMainTab('vloot');
-  });
-
-  $$('#truckDetail [data-subtab]').forEach(button => button.addEventListener('click', () => setDetailTab(button.dataset.subtab)));
 
   $('#moduleCycleBtn')?.addEventListener('click', () => {
     const allowedTabs = Array.isArray(state.allowedTabs) ? state.allowedTabs : [];
