@@ -1,6 +1,6 @@
 import { FLEET, USERS } from '../data.js';
 import { state } from '../state.js';
-import { $, $$ } from '../utils.js';
+import { $, $$, renderStatusBadge, getToneForAccountRequestStatus } from '../utils.js';
 import { showToast } from './ui/toast.js';
 import { canManageUsers, canApproveAccountRequests } from './access.js';
 
@@ -62,7 +62,10 @@ function renderHistory(historyEl, resolvedRequests = []) {
   if (!historyEl) return;
   historyEl.innerHTML = resolvedRequests
     .map(request => {
-      const statusLabel =
+      const statusTone = getToneForAccountRequestStatus(request.status);
+      const badgeLabel = request.status === 'approved' ? 'Goedgekeurd' : 'Afgewezen';
+      const statusBadge = renderStatusBadge(badgeLabel, statusTone);
+      const statusDetail =
         request.status === 'approved'
           ? `Toegekend als ${request.assignedRole || 'onbekend'}`
           : 'Afgewezen';
@@ -72,8 +75,11 @@ function renderHistory(historyEl, resolvedRequests = []) {
       return `
         <div class="flex items-start justify-between gap-3 border border-gray-200 rounded-lg px-3 py-2">
           <div>
-            <p class="font-medium text-gray-800">${request.name}</p>
-            <p class="text-xs text-gray-500">${statusLabel} • ${formatDateTime(request.completedAt)}${passwordInfo}</p>
+            <div class="flex items-center gap-2">
+              <p class="font-medium text-gray-800">${request.name}</p>
+              ${statusBadge}
+            </div>
+            <p class="text-xs text-gray-500">${statusDetail} • ${formatDateTime(request.completedAt)}${passwordInfo}</p>
           </div>
           <span class="text-xs text-gray-500">${fleetLabel}</span>
         </div>`;
@@ -108,12 +114,19 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
       const passwordLabel = request.passwordSetAt
         ? `Wachtwoord ingesteld op ${formatDateTime(request.passwordSetAt)}`
         : 'Wachtwoord nog niet ingesteld';
+      const loginStatusBadge = renderStatusBadge(loginStatusLabel, request.loginEnabled ? 'success' : 'danger');
+      const passwordStatusTone = request.passwordSetAt ? 'success' : 'warning';
+      const passwordStatusBadge = renderStatusBadge(passwordLabel, passwordStatusTone);
 
+      const statusBadge = renderStatusBadge('In behandeling', getToneForAccountRequestStatus(request.status));
       return `
         <article class="border border-gray-200 rounded-lg p-4 space-y-3" data-request data-id="${request.id}">
           <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
-              <p class="font-semibold text-gray-800">${request.name}</p>
+              <div class="flex items-center gap-2">
+                <p class="font-semibold text-gray-800">${request.name}</p>
+                ${statusBadge}
+              </div>
               <p class="text-sm text-gray-500">${contactDetails || 'Geen contactgegevens'}</p>
               ${note}
             </div>
@@ -133,11 +146,11 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
             </div>
             <div>
               <p class="text-xs uppercase text-gray-500 tracking-wide">Toegang</p>
-              <p>${loginStatusLabel}</p>
+              <p>${loginStatusBadge}</p>
             </div>
             <div>
               <p class="text-xs uppercase text-gray-500 tracking-wide">Wachtwoord</p>
-              <p>${passwordLabel}</p>
+              <p>${passwordStatusBadge}</p>
             </div>
           </div>
           <div class="grid sm:grid-cols-2 gap-3">
@@ -155,8 +168,8 @@ function renderPendingRequests(listEl, pendingRequests, fleetSummaries) {
             </label>
           </div>
           <div class="flex justify-end gap-2">
-            <button class="px-3 py-2 border rounded-lg text-sm" data-request-action="reject" data-id="${request.id}">Weigeren</button>
-            <button class="px-3 py-2 bg-motrac-red text-white rounded-lg text-sm" data-request-action="approve" data-id="${request.id}">Toekennen</button>
+            <button class="px-3 py-2 border rounded-lg text-sm" type="button" title="Aanvraag afwijzen" data-request-action="reject" data-id="${request.id}">Weigeren</button>
+            <button class="px-3 py-2 bg-motrac-red text-white rounded-lg text-sm" type="button" title="Aanvraag toekennen" data-request-action="approve" data-id="${request.id}">Toekennen</button>
           </div>
         </article>`;
     })
@@ -181,8 +194,8 @@ function ensureSearchControls() {
       <label for="usersSearch" class="block text-sm text-gray-600">Zoek gebruiker…</label>
       <div class="mt-1 flex gap-2">
         <input id="usersSearch" type="search" class="flex-1 border rounded-lg px-3 py-2" placeholder="Naam, e-mail of telefoon" />
-        <button id="usersSearchBtn" class="px-4 py-2 bg-gray-900 text-white rounded-lg">Zoeken</button>
-        <button id="usersSearchReset" class="px-4 py-2 border rounded-lg">Reset</button>
+        <button id="usersSearchBtn" class="px-4 py-2 bg-gray-900 text-white rounded-lg" type="button" title="Zoek binnen gebruikers">Zoeken</button>
+        <button id="usersSearchReset" class="px-4 py-2 border rounded-lg" type="button" title="Wis zoekopdracht">Reset</button>
       </div>
     `;
     header.insertAdjacentElement('afterend', card);
@@ -404,7 +417,7 @@ function renderUsersTableRows(users) {
       <td class="py-3 px-3" data-label="Portaalrechten">${user.role}</td>
       <td class="py-3 px-3 sm:text-right" data-label="Acties">
         <div class="relative inline-block kebab">
-          <button class="px-2 py-1 border rounded-lg">⋮</button>
+          <button class="px-2 py-1 border rounded-lg" type="button" title="Acties voor ${user.name}" aria-label="Acties voor ${user.name}">⋮</button>
           <div class="kebab-menu hidden absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-soft z-10">
             <button class="w-full text-left px-4 py-2 hover:bg-gray-50" data-user-action="edit" data-id="${user.id}">Bewerken</button>
             ${ensureResetPasswordButton(user)}

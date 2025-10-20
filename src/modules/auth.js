@@ -21,6 +21,7 @@ import { renderUsers } from './users.js';
 import { applyEnvironmentForRole } from './tabs.js';
 import { setMainTab } from './navigation.js';
 import { showToast } from './ui/toast.js';
+import { showGlobalLoading, hideGlobalLoading } from './ui/loading.js';
 import { resolveEnvironment } from '../environment.js';
 import { TAB_LABELS } from './tabConfig.js';
 import { applyFiltersFromUrl } from './filterSync.js';
@@ -488,21 +489,32 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
   }
 
   const shouldReloadData = forceReload || !state.hasLoadedInitialData;
+  let initialDataLoaded = true;
+  let displayedGlobalLoader = false;
   if (shouldReloadData) {
+    setFleetLoading(true);
+    showGlobalLoading('Data wordt geladen…');
+    displayedGlobalLoader = true;
     try {
-      setFleetLoading(true);
       await loadInitialData(mergedProfile, fleetAccess);
     } catch (error) {
       console.error('Kon data niet laden', error);
       setLoginError('Er ging iets mis bij het laden van de gegevens. Probeer het later opnieuw.');
       setLoginStatus('');
       setLoginFormDisabled(false);
+      initialDataLoaded = false;
+    } finally {
       setFleetLoading(false);
+      if (displayedGlobalLoader) {
+        hideGlobalLoading();
+        displayedGlobalLoader = false;
+      }
+    }
+
+    if (!initialDataLoaded) {
       return;
     }
   }
-
-  setFleetLoading(false);
 
   const storedLocation = getStoredLocationPreference();
   if (storedLocation) {
