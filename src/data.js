@@ -151,9 +151,60 @@ function normaliseContract(contractLike = {}, fallbackModel = '—') {
 }
 
 function normaliseFleetActivity(activity = []) {
-  return Array.isArray(activity)
-    ? activity.map(entry => ({ ...entry }))
-    : [];
+  if (!Array.isArray(activity)) {
+    return [];
+  }
+
+  return activity.map(entry => {
+    const cloned = { ...entry };
+    const status = typeof cloned.status === 'string' && cloned.status.trim() ? cloned.status.trim() : 'Onbekend';
+    const baseDate =
+      cloned.updatedAt || cloned.completedAt || cloned.date || cloned.createdAt || new Date().toISOString();
+    const baseAuthor = cloned.updatedBy || cloned.createdBy || 'Motrac Service';
+
+    const historySource = Array.isArray(cloned.statusHistory) ? cloned.statusHistory : [];
+    const history = historySource
+      .map(item => ({
+        id: item.id || `status-${Math.random().toString(36).slice(2)}`,
+        status: item.status || status,
+        date: item.date || item.changedAt || baseDate,
+        author: item.author || item.changedBy || baseAuthor
+      }))
+      .filter(item => item.status && item.date);
+
+    if (!history.length) {
+      history.push({
+        id: `status-${Math.random().toString(36).slice(2)}`,
+        status,
+        date: baseDate,
+        author: baseAuthor
+      });
+    } else {
+      const hasCurrentStatus = history.some(
+        item => item.status && item.status.toLowerCase() === status.toLowerCase()
+      );
+      if (!hasCurrentStatus) {
+        history.push({
+          id: `status-${Math.random().toString(36).slice(2)}`,
+          status,
+          date: baseDate,
+          author: baseAuthor
+        });
+      }
+    }
+
+    history.sort((a, b) => {
+      const aTime = new Date(a.date).valueOf();
+      const bTime = new Date(b.date).valueOf();
+      if (Number.isNaN(aTime) || Number.isNaN(bTime)) {
+        return 0;
+      }
+      return aTime - bTime;
+    });
+
+    cloned.statusHistory = history;
+    return cloned;
+  });
 }
 
 function normaliseFleetCustomer(item = {}) {

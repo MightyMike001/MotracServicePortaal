@@ -1,6 +1,6 @@
 import { FLEET, getFleetById } from '../data.js';
 import { state } from '../state.js';
-import { $, fmtDate, renderStatusBadge, getToneForActivityStatus } from '../utils.js';
+import { $, fmtDate, fmtDateTime, renderStatusBadge, getToneForActivityStatus } from '../utils.js';
 import { filterFleetByAccess, canViewFleetAsset } from './access.js';
 import { renderFleet } from './fleet.js';
 import { syncFiltersToUrl } from './filterSync.js';
@@ -15,6 +15,80 @@ const STATUS_OPTIONS = [
 ];
 
 let activeDetail = null;
+
+function generateStatusHistoryId() {
+  return `status-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createStatusHistoryEntry(status, date, author = 'Portaal gebruiker') {
+  return {
+    id: generateStatusHistoryId(),
+    status,
+    date,
+    author
+  };
+}
+
+function buildDetailActions(activity) {
+  const actions = [
+    '<button type="button" class="px-4 py-2 rounded-lg border" data-close-activity>Sluiten</button>'
+  ];
+  const status = (activity.status || '').toLowerCase();
+
+  if (status === 'open') {
+    actions.push(
+      '<button type="button" class="px-4 py-2 rounded-lg bg-red-600 text-white" data-activity-action="cancel">Annuleer melding</button>'
+    );
+  } else if (status === 'in behandeling') {
+    actions.push(
+      '<button type="button" class="px-4 py-2 rounded-lg bg-green-600 text-white" data-activity-action="complete">Markeer als afgerond</button>'
+    );
+  } else if (status === 'afgerond' || status === 'geannuleerd') {
+    actions.push(
+      '<button type="button" class="px-4 py-2 rounded-lg bg-blue-600 text-white" data-activity-action="reopen">Heropen melding</button>'
+    );
+  }
+
+  return actions.join('');
+}
+
+function renderStatusTimeline(activity) {
+  const history = Array.isArray(activity.statusHistory) ? activity.statusHistory : [];
+  if (!history.length) {
+    return '';
+  }
+
+  const items = history
+    .slice()
+    .sort((a, b) => {
+      const aTime = new Date(a.date).valueOf();
+      const bTime = new Date(b.date).valueOf();
+      if (Number.isNaN(aTime) || Number.isNaN(bTime)) {
+        return 0;
+      }
+      return bTime - aTime;
+    })
+    .map(entry => {
+      const badge = renderStatusBadge(entry.status, getToneForActivityStatus(entry.status));
+      const timestamp = fmtDateTime(entry.date);
+      const author = entry.author || 'Onbekend';
+      return `
+        <li class="border border-gray-200 rounded-lg px-3 py-2 bg-white">
+          <div class="text-xs text-gray-500">${timestamp} • ${author}</div>
+          <div class="mt-1">${badge}</div>
+        </li>`;
+    })
+    .join('');
+
+  return `
+    <div>
+      <p class="text-xs uppercase text-gray-500 mb-2">Statusgeschiedenis</p>
+      <ol class="space-y-2 text-sm">
+        ${items}
+      </ol>
+    </div>
+  `;
+}
 let ticketComposerInitialised = false;
 let pendingTicketAttachments = [];
 
@@ -290,11 +364,7 @@ function ensureDetailOverlay() {
         <button type="button" class="text-gray-500 hover:text-gray-800" data-close-activity aria-label="Sluiten">×</button>
       </div>
       <div id="activityDetailBody" class="px-6 py-4 space-y-4 text-sm text-gray-700"></div>
-      <div class="flex justify-end gap-2 px-6 py-4 border-t bg-gray-50">
-        <button class="px-4 py-2 rounded-lg border" data-close-activity>Sluiten</button>
-        <button class="px-4 py-2 rounded-lg bg-red-600 text-white" data-activity-action="cancel">Annuleer melding</button>
-        <button class="px-4 py-2 rounded-lg bg-green-600 text-white" data-activity-action="complete">Markeer als afgerond</button>
-      </div>
+      <div id="activityDetailActions" class="flex flex-wrap justify-end gap-2 px-6 py-4 border-t bg-gray-50"></div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -311,6 +381,9 @@ function ensureDetailOverlay() {
     if (action === 'cancel') {
       updateActivityStatus(activeDetail, 'Geannuleerd');
     }
+    if (action === 'reopen') {
+      updateActivityStatus(activeDetail, 'Open');
+    }
   });
 
   return overlay;
@@ -321,17 +394,40 @@ function updateActivityStatus(detail, nextStatus) {
   if (!truck) return;
   const activity = (truck.activity || []).find(entry => entry.id === detail.activityId);
   if (!activity) return;
-  activity.status = nextStatus;
-  activity.updatedAt = new Date().toISOString();
-  if (nextStatus === 'Afgerond') {
-    activity.completedAt = activity.updatedAt;
+  const currentStatus = activity.status;
+  if (currentStatus === nextStatus) {
+    closeActivityDetail();
+    return;
   }
+
+  const timestamp = new Date().toISOString();
+  activity.status = nextStatus;
+  activity.updatedAt = timestamp;
+  if (nextStatus === 'Afgerond') {
+    activity.completedAt = timestamp;
+  } else if (nextStatus === 'Open' || nextStatus === 'Geannuleerd') {
+    activity.completedAt = null;
+  }
+
+  if (!Array.isArray(activity.statusHistory)) {
+    activity.statusHistory = [];
+  }
+  const history = activity.statusHistory;
+  const lastEntry = history[history.length - 1];
+  const lastStatus = (lastEntry?.status || '').toLowerCase();
+  if (lastStatus !== (nextStatus || '').toLowerCase()) {
+    history.push(createStatusHistoryEntry(nextStatus, timestamp));
+  } else {
+    history[history.length - 1] = { ...lastEntry, date: timestamp };
+  }
+
   truck.openActivityCount = truck.activity.filter(item => item?.status === 'Open').length;
   closeActivityDetail();
   renderFleet();
   renderActivity();
   showToast(`Melding ${activity.id} is bijgewerkt naar ${nextStatus}.`, {
-    variant: nextStatus === 'Geannuleerd' ? 'warning' : 'success'
+    variant:
+      nextStatus === 'Geannuleerd' ? 'warning' : nextStatus === 'Open' ? 'info' : 'success'
   });
 }
 
@@ -363,6 +459,7 @@ function renderDetail(truck, activity) {
       <p class="text-xs uppercase text-gray-500 mb-1">Voortgang</p>
       ${renderProgressBar(activity)}
     </div>
+    ${renderStatusTimeline(activity)}
     <div class="border rounded-lg p-4 bg-gray-50">
       <p class="text-xs uppercase text-gray-500">Omschrijving</p>
       <p class="leading-relaxed">${activity.desc}</p>
@@ -385,6 +482,11 @@ function renderDetail(truck, activity) {
       </ul>
     </div>
   `;
+
+  const actionsContainer = overlay.querySelector('#activityDetailActions');
+  if (actionsContainer) {
+    actionsContainer.innerHTML = buildDetailActions(activity);
+  }
 
   overlay.classList.remove('hidden');
   activeDetail = { truckId: truck.id, activityId: activity.id };
