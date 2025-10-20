@@ -39,26 +39,10 @@ export function wireEvents() {
   }
 
   const mainNav = $('#mainNav');
-  const mobileMenuToggle = $('#mobileMenuToggle');
   const collapseMobileMenu = () => {
-    if (!mainNav || !mobileMenuToggle) return;
-    mainNav.classList.add('hidden');
-    mobileMenuToggle.setAttribute('aria-expanded', 'false');
-  };
-
-  mobileMenuToggle?.addEventListener('click', () => {
     if (!mainNav) return;
-    const isHidden = mainNav.classList.toggle('hidden');
-    mobileMenuToggle.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
-  });
-
-  document.addEventListener('click', event => {
-    if (!mainNav || !mobileMenuToggle) return;
-    if (mainNav.classList.contains('hidden')) return;
-    if (!window.matchMedia('(max-width: 639px)').matches) return;
-    if (event.target.closest('#mainNav') || event.target.closest('#mobileMenuToggle')) return;
-    collapseMobileMenu();
-  });
+    mainNav.classList.add('hidden');
+  };
 
   const userBtn = $('#userBtn');
   const userMenu = $('#userMenu');
