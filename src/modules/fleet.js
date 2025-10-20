@@ -1,6 +1,6 @@
 import { LOCATIONS, FLEET, getFleetById } from '../data.js';
 import { state } from '../state.js';
-import { $, fmtDate, formatCustomerOwnership } from '../utils.js';
+import { $, fmtDate, formatCustomerOwnership, closeModal } from '../utils.js';
 import { filterFleetByAccess, ensureAccessibleLocation } from './access.js';
 import { showToast } from './ui/toast.js';
 
@@ -139,11 +139,11 @@ function ensureBmwModal() {
     return modal;
   }
 
-  modal = document.createElement('div');
+  modal = document.createElement('dialog');
   modal.id = 'fleetBmwModal';
-  modal.className = 'modal fixed inset-0 bg-black/40 items-center justify-center p-4';
+  modal.className = 'modal';
   modal.innerHTML = `
-    <div class="bg-white w-full max-w-md rounded-xl shadow-soft p-6 space-y-4">
+    <div class="modal-panel bg-white w-full max-w-md rounded-xl shadow-soft p-6 space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold">BMWT-status bijwerken</h3>
         <button type="button" data-close aria-label="Sluiten" class="text-gray-500">✕</button>
@@ -169,10 +169,23 @@ function ensureBmwModal() {
   document.body.appendChild(modal);
 
   const close = () => closeBmwModal();
+
   modal.addEventListener('click', event => {
-    if (event.target === modal || event.target.dataset.close !== undefined) {
+    if (event.target === modal) {
       close();
     }
+  });
+
+  modal.querySelectorAll('[data-close]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      close();
+    });
+  });
+
+  modal.addEventListener('cancel', event => {
+    event.preventDefault();
+    close();
   });
 
   modal.querySelector('form')?.addEventListener('submit', event => {
@@ -189,7 +202,7 @@ function ensureBmwModal() {
 function closeBmwModal() {
   const modal = document.getElementById('fleetBmwModal');
   if (!modal) return;
-  modal.classList.remove('show');
+  closeModal(modal);
   bmwModalState = { truckId: null };
 }
 
@@ -251,7 +264,13 @@ export function openBmwEditor(truckId) {
   }
 
   bmwModalState.truckId = truck.id;
-  modal.classList.add('show');
+  if (modal instanceof HTMLDialogElement) {
+    if (!modal.open) {
+      modal.showModal();
+    }
+  } else {
+    modal.classList.add('show');
+  }
   statusSelect?.focus();
 }
 

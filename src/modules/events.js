@@ -1,6 +1,6 @@
 import { USERS, getFleetById } from '../data.js';
 import { state } from '../state.js';
-import { $, $$, fmtDate, openModal, closeModals, kv, formatHoursLabel } from '../utils.js';
+import { $, $$, fmtDate, openModal, closeModals, closeModal, kv, formatHoursLabel } from '../utils.js';
 import { showToast } from './ui/toast.js';
 import { renderFleet, updateLocationFilter, openBmwEditor } from './fleet.js';
 import { applyFiltersFromUrl, resetFilters, syncFiltersToUrl } from './filterSync.js';
@@ -310,7 +310,25 @@ export function wireEvents() {
     }
   });
 
-  document.querySelectorAll('.modal [data-close]').forEach(button => button.addEventListener('click', closeModals));
+  document.querySelectorAll('.modal [data-close]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      const modal = button.closest('.modal');
+      if (modal) {
+        closeModal(modal);
+      } else {
+        closeModals();
+      }
+    });
+  });
+
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', event => {
+      if (event.target === modal) {
+        closeModal(modal);
+      }
+    });
+  });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       closeModals();

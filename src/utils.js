@@ -43,15 +43,40 @@ export const formatOdoValue = formatNumericValue;
 export const formatOdoHtml = formatNumericHtml;
 export const formatOdoLabel = formatNumericLabel;
 
+const toggleModalVisibility = (modal, shouldOpen) => {
+  if (!(modal instanceof Element)) return;
+  if (modal instanceof HTMLDialogElement) {
+    if (shouldOpen) {
+      if (!modal.open) {
+        modal.showModal();
+      }
+    } else if (modal.open) {
+      modal.close();
+    }
+    return;
+  }
+
+  if (shouldOpen) {
+    modal.classList.add('show');
+  } else {
+    modal.classList.remove('show');
+  }
+};
+
 export function openModal(selector) {
   const el = $(selector);
   if (el) {
-    el.classList.add('show');
+    toggleModalVisibility(el, true);
   }
 }
 
 export function closeModals() {
-  $$('.modal').forEach(modal => modal.classList.remove('show'));
+  $$('.modal').forEach(modal => toggleModalVisibility(modal, false));
+}
+
+export function closeModal(modal) {
+  if (!modal) return;
+  toggleModalVisibility(modal, false);
 }
 
 export const kv = (label, value) => `

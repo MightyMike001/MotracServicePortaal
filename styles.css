@@ -215,14 +215,39 @@
 }
 
 .modal {
-  display: none;
-  align-items: center;
-  justify-content: center;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  max-width: none;
   z-index: 50;
+}
+
+.modal[open] {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  width: 100vw;
+  height: 100vh;
+  padding: 1rem;
 }
 
 .modal.show {
   display: flex;
+  position: fixed;
+  inset: 0;
+  padding: 1rem;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.modal::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.modal-panel {
+  pointer-events: auto;
 }
 
 .truncate-2 {
