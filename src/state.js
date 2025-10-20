@@ -5,6 +5,8 @@ export const state = {
   usersPage: 1,
   usersPageSize: 10,
   usersSearchQuery: '',
+  usersSortKey: 'name',
+  usersSortDirection: 'asc',
   editUserId: null,
   session: null,
   profile: null,
