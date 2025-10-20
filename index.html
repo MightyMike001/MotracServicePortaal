@@ -181,7 +181,7 @@
                     <path d="M21 19v-1a3 3 0 00-2.4-2.94" stroke-linecap="round" stroke-linejoin="round" />
                     <path d="M15 4.14a3 3 0 010 5.72" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
-                  <span class="main-menu__label">Gebruikers</span>
+                  <span class="main-menu__label">Gebruikersbeheer</span>
                 </button>
               </li>
             </ul>
@@ -348,11 +348,31 @@
           <table class="min-w-full text-sm">
             <thead>
               <tr class="text-left text-gray-600 border-b">
-                <th class="py-3 px-3">Gebruiker</th>
-                <th class="py-3 px-3">Locatie</th>
-                <th class="py-3 px-3">Email</th>
-                <th class="py-3 px-3">Portaalrechten</th>
-                <th class="py-3 px-3 text-right">Acties</th>
+                <th class="py-3 px-3" scope="col" data-users-sort-th="name">
+                  <button type="button" class="table-sort-button" data-users-sort="name">
+                    Gebruiker
+                    <span class="table-sort-indicator" data-users-sort-indicator="name" aria-hidden="true">↕</span>
+                  </button>
+                </th>
+                <th class="py-3 px-3" scope="col" data-users-sort-th="location">
+                  <button type="button" class="table-sort-button" data-users-sort="location">
+                    Locatie
+                    <span class="table-sort-indicator" data-users-sort-indicator="location" aria-hidden="true">↕</span>
+                  </button>
+                </th>
+                <th class="py-3 px-3" scope="col" data-users-sort-th="email">
+                  <button type="button" class="table-sort-button" data-users-sort="email">
+                    Email
+                    <span class="table-sort-indicator" data-users-sort-indicator="email" aria-hidden="true">↕</span>
+                  </button>
+                </th>
+                <th class="py-3 px-3" scope="col" data-users-sort-th="role">
+                  <button type="button" class="table-sort-button" data-users-sort="role">
+                    Portaalrechten
+                    <span class="table-sort-indicator" data-users-sort-indicator="role" aria-hidden="true">↕</span>
+                  </button>
+                </th>
+                <th class="py-3 px-3 text-right" scope="col">Acties</th>
               </tr>
             </thead>
             <tbody id="usersTbody"></tbody>
@@ -446,7 +466,7 @@
               <path d="M21 19v-1a3 3 0 00-2.4-2.94" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M15 4.14a3 3 0 010 5.72" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            <span class="mobile-tab-bar__label">Gebruikers</span>
+            <span class="mobile-tab-bar__label">Gebruikersbeheer</span>
           </button>
         </li>
       </ul>

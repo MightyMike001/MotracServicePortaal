@@ -1,10 +1,19 @@
 import { FLEET, USERS } from '../data.js';
 import { state } from '../state.js';
-import { $ } from '../utils.js';
+import { $, $$ } from '../utils.js';
 import { showToast } from './ui/toast.js';
 import { canManageUsers, canApproveAccountRequests } from './access.js';
 
 const ROLE_OPTIONS = ['Beheerder', 'Gebruiker', 'Vlootbeheerder', 'Klant'];
+
+const SORT_SELECTORS = {
+  name: user => user.name || '',
+  location: user => user.location || '',
+  email: user => user.email || '',
+  role: user => user.role || ''
+};
+
+let sortControlsInitialised = false;
 
 const dateFormatter = new Intl.DateTimeFormat('nl-NL', {
   dateStyle: 'medium',
@@ -225,6 +234,75 @@ function filterUsers() {
   });
 }
 
+function sortUsersList(list) {
+  const { usersSortKey, usersSortDirection } = state;
+  if (!SORT_SELECTORS[usersSortKey]) {
+    return list;
+  }
+
+  const selector = SORT_SELECTORS[usersSortKey];
+  const direction = usersSortDirection === 'desc' ? -1 : 1;
+  return [...list].sort((a, b) => {
+    const valueA = selector(a);
+    const valueB = selector(b);
+    return valueA.localeCompare(valueB, 'nl-NL', { sensitivity: 'base' }) * direction;
+  });
+}
+
+function setupUsersSortControls() {
+  if (sortControlsInitialised) return;
+  const buttons = $$('[data-users-sort]');
+  if (!buttons.length) return;
+
+  buttons.forEach(button => {
+    button.addEventListener('click', () => {
+      const key = button.dataset.usersSort;
+      if (!key || !SORT_SELECTORS[key]) return;
+
+      if (state.usersSortKey === key) {
+        state.usersSortDirection = state.usersSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.usersSortKey = key;
+        state.usersSortDirection = 'asc';
+      }
+
+      renderUsers();
+    });
+  });
+
+  sortControlsInitialised = true;
+}
+
+function updateUsersSortIndicators() {
+  const { usersSortKey, usersSortDirection } = state;
+
+  $$('[data-users-sort-th]').forEach(th => {
+    const key = th.dataset.usersSortTh;
+    if (!key) return;
+    const isActive = key === usersSortKey;
+    const ariaSort = isActive ? (usersSortDirection === 'desc' ? 'descending' : 'ascending') : 'none';
+    th.setAttribute('aria-sort', ariaSort);
+  });
+
+  $$('[data-users-sort]').forEach(button => {
+    const key = button.dataset.usersSort;
+    const isActive = key === usersSortKey;
+    button.classList.toggle('table-sort-button--active', isActive);
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+
+  $$('[data-users-sort-indicator]').forEach(indicator => {
+    const key = indicator.dataset.usersSortIndicator;
+    if (!key) return;
+    const isActive = key === usersSortKey;
+    if (!isActive) {
+      indicator.textContent = '↕';
+      return;
+    }
+    indicator.textContent = usersSortDirection === 'desc' ? '↓' : '↑';
+  });
+}
+
 /**
  * Updates the pagination summary text underneath the users table.
  */
@@ -407,6 +485,8 @@ export function renderUsers() {
   }
 
   ensureSearchControls();
+  setupUsersSortControls();
+  updateUsersSortIndicators();
 
   const parsedPageSize = parseInt(pageSizeInput?.value, 10);
   if (Number.isInteger(parsedPageSize) && parsedPageSize > 0) {
@@ -416,14 +496,15 @@ export function renderUsers() {
   }
 
   const filtered = filterUsers();
-  const totalItems = filtered.length;
+  const sorted = sortUsersList(filtered);
+  const totalItems = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / state.usersPageSize));
   if (state.usersPage > totalPages) {
     state.usersPage = totalPages;
   }
 
   const start = (state.usersPage - 1) * state.usersPageSize;
-  const pageItems = filtered.slice(start, start + state.usersPageSize);
+  const pageItems = sorted.slice(start, start + state.usersPageSize);
 
   tableBody.innerHTML = pageItems.length ? renderUsersTableRows(pageItems) : '';
 

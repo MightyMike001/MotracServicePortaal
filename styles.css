@@ -172,6 +172,43 @@
   white-space: nowrap;
 }
 
+.table-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.table-sort-button:hover,
+.table-sort-button:focus-visible {
+  color: var(--color-text);
+}
+
+.table-sort-button.table-sort-button--active {
+  color: var(--color-text);
+}
+
+.table-sort-button:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.table-sort-indicator {
+  font-size: 0.85em;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.table-sort-button[aria-pressed='true'] .table-sort-indicator,
+.table-sort-button.table-sort-button--active .table-sort-indicator {
+  opacity: 1;
+}
+
 .user-status-indicator {
   width: 0.5rem;
   height: 0.5rem;
