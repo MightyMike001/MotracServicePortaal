@@ -491,7 +491,13 @@
       <div class="space-y-2">
         <div class="text-sm text-gray-600">Huidige urenstand: <span id="odoCurrent" class="font-medium text-gray-800">—</span></div>
         <label class="text-sm text-gray-600">Nieuwe urenstand</label>
-        <input id="odoNew" type="number" class="w-full border rounded-lg px-3 py-2" />
+        <input
+          id="odoNew"
+          type="number"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          class="w-full border rounded-lg px-3 py-2"
+        />
       </div>
       <div class="mt-6 flex justify-end gap-2">
         <button data-close class="px-4 py-2 border rounded-lg">Annuleren</button>
