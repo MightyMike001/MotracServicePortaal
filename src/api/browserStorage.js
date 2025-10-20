@@ -1,4 +1,12 @@
-import { LOCATIONS, FLEET, USERS, getFleetRepresentativeByFleetId } from '../data.js';
+import {
+  LOCATIONS,
+  FLEET,
+  USERS,
+  getFleetRepresentativeByFleetId,
+  setLocations,
+  setFleet,
+  getFleetById
+} from '../data.js';
 
 const STORAGE_KEY = 'motrac-service-portal';
 
@@ -143,7 +151,8 @@ function createDefaultStore() {
   return {
     session: null,
     profile: { ...TEST_PROFILE },
-    accountRequests: DEFAULT_ACCOUNT_REQUESTS.map(cloneAccountRequest)
+    accountRequests: DEFAULT_ACCOUNT_REQUESTS.map(cloneAccountRequest),
+    customers: buildDefaultCustomers()
   };
 }
 
@@ -157,7 +166,16 @@ function ensureStore() {
     memoryStore = createDefaultStore();
   }
 
+  if (!Array.isArray(memoryStore.customers)) {
+    memoryStore.customers = buildDefaultCustomers();
+  }
+
   return memoryStore;
+}
+
+export function resetLocalStore() {
+  storeLoaded = false;
+  memoryStore = null;
 }
 
 function loadStoreFromSessionStorage() {
@@ -180,7 +198,10 @@ function loadStoreFromSessionStorage() {
       profile: { ...TEST_PROFILE, ...(parsed.profile || {}) },
       accountRequests: Array.isArray(parsed.accountRequests)
         ? parsed.accountRequests.map(cloneAccountRequest)
-        : DEFAULT_ACCOUNT_REQUESTS.map(cloneAccountRequest)
+        : DEFAULT_ACCOUNT_REQUESTS.map(cloneAccountRequest),
+      customers: Array.isArray(parsed.customers)
+        ? parsed.customers.map(cloneCustomer)
+        : buildDefaultCustomers()
     };
   } catch (error) {
     console.warn('Kon opgeslagen browserdata niet lezen, start met standaardwaarden.', error);
@@ -200,7 +221,8 @@ function persistStore() {
       JSON.stringify({
         session: memoryStore.session,
         profile: memoryStore.profile,
-        accountRequests: memoryStore.accountRequests
+        accountRequests: memoryStore.accountRequests,
+        customers: cloneCustomers(memoryStore.customers || [])
       })
     );
   } catch (error) {
@@ -250,9 +272,310 @@ function cloneUsers() {
   return USERS.map(user => ({ ...user }));
 }
 
+function cloneCustomerLocation(location) {
+  if (!location) return null;
+  return { ...location };
+}
+
+function cloneCustomer(customer) {
+  if (!customer) return null;
+  return {
+    ...customer,
+    fleetIds: Array.isArray(customer.fleetIds) ? [...customer.fleetIds] : [],
+    userIds: Array.isArray(customer.userIds) ? [...customer.userIds] : [],
+    locations: Array.isArray(customer.locations) ? customer.locations.map(cloneCustomerLocation) : []
+  };
+}
+
+function cloneCustomers(customers = []) {
+  return customers.map(cloneCustomer);
+}
+
 function generateRequestId() {
   const random = Math.random().toString(36).slice(2, 8).toUpperCase();
   return `REQ-${random}`;
+}
+
+const DEFAULT_CUSTOMER_TIMESTAMP = '2025-01-01T00:00:00.000Z';
+
+function normaliseRole(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function slugify(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
+function deriveSubLocation(displayName, customerName) {
+  if (typeof displayName !== 'string' || !displayName.trim()) {
+    return null;
+  }
+  if (typeof customerName === 'string' && displayName.startsWith(`${customerName} – `)) {
+    return displayName.slice(customerName.length + 3);
+  }
+  const parts = displayName.split(' – ');
+  if (parts.length > 1) {
+    return parts.slice(1).join(' – ');
+  }
+  return displayName;
+}
+
+function generateCustomerId(customers, name) {
+  const existing = new Set(customers.map(customer => customer.id));
+  const baseSlug = slugify(name).toUpperCase();
+  let candidate = baseSlug ? `CUS-${baseSlug}` : null;
+  let counter = 2;
+  while (!candidate || existing.has(candidate)) {
+    const suffix = counter > 2 ? `-${counter}` : '';
+    candidate = baseSlug ? `CUS-${baseSlug}${suffix}` : null;
+    counter += 1;
+    if (!candidate || existing.has(candidate)) {
+      candidate = `CUS-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    }
+    if (!existing.has(candidate)) {
+      break;
+    }
+  }
+  return candidate;
+}
+
+function isFleetIdUsed(fleetId) {
+  if (!fleetId) return false;
+  const representative = getFleetRepresentativeByFleetId(fleetId);
+  return Boolean(representative);
+}
+
+function generateFleetId(customers) {
+  const known = new Set();
+  customers.forEach(customer => {
+    if (Array.isArray(customer.fleetIds)) {
+      customer.fleetIds.forEach(id => known.add(id));
+    }
+    if (customer.primaryFleetId) {
+      known.add(customer.primaryFleetId);
+    }
+  });
+
+  let candidate = null;
+  do {
+    candidate = `CF-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  } while (known.has(candidate) || isFleetIdUsed(candidate));
+
+  return candidate;
+}
+
+function generateLocationId(customer, displayName) {
+  const existingLocations = Array.isArray(customer?.locations)
+    ? customer.locations
+    : customer?.locations instanceof Map
+    ? Array.from(customer.locations.values())
+    : [];
+  const existing = new Set(existingLocations.map(location => location.id));
+  const slug = slugify(displayName).toUpperCase();
+  let candidate = slug ? `LOC-${slug}` : null;
+  let counter = 2;
+  while (!candidate || existing.has(candidate)) {
+    const suffix = counter > 2 ? `-${counter}` : '';
+    candidate = slug ? `LOC-${slug}${suffix}` : null;
+    counter += 1;
+    if (!candidate || existing.has(candidate)) {
+      candidate = `LOC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    }
+    if (!existing.has(candidate)) {
+      break;
+    }
+  }
+  return candidate;
+}
+
+function buildDefaultCustomers() {
+  const customersByName = new Map();
+
+  const ensureCustomer = (name, fleetId) => {
+    if (typeof name !== 'string' || !name.trim()) {
+      return null;
+    }
+    const trimmedName = name.trim();
+    const key = trimmedName.toLowerCase();
+    if (!customersByName.has(key)) {
+      const id = generateCustomerId(Array.from(customersByName.values()), trimmedName);
+      customersByName.set(key, {
+        id,
+        name: trimmedName,
+        createdAt: DEFAULT_CUSTOMER_TIMESTAMP,
+        updatedAt: DEFAULT_CUSTOMER_TIMESTAMP,
+        createdByRole: 'system',
+        primaryFleetId: fleetId || null,
+        fleetIds: new Set(fleetId ? [fleetId] : []),
+        userIds: new Set(),
+        locations: new Map()
+      });
+    }
+
+    const customer = customersByName.get(key);
+    if (fleetId) {
+      customer.fleetIds.add(fleetId);
+      if (!customer.primaryFleetId) {
+        customer.primaryFleetId = fleetId;
+      }
+    }
+    return customer;
+  };
+
+  FLEET.forEach(truck => {
+    const customerName = truck?.customer?.name;
+    const fleetId = truck?.fleetId || null;
+    const customer = ensureCustomer(customerName, fleetId);
+    if (!customer) return;
+
+    const locationDisplay = typeof truck.location === 'string' ? truck.location : null;
+    if (!locationDisplay) return;
+    const locationKey = locationDisplay.toLowerCase();
+    if (customer.locations.has(locationKey)) {
+      return;
+    }
+
+    const subLocation = truck?.customer?.subLocation || deriveSubLocation(locationDisplay, customer.name);
+    customer.locations.set(locationKey, {
+      id: generateLocationId(customer, locationDisplay),
+      name: subLocation || locationDisplay,
+      displayName: locationDisplay,
+      createdAt: DEFAULT_CUSTOMER_TIMESTAMP,
+      createdByRole: 'system',
+      updatedAt: DEFAULT_CUSTOMER_TIMESTAMP
+    });
+  });
+
+  USERS.forEach(user => {
+    if ((user.role || '').toLowerCase() !== 'klant') {
+      return;
+    }
+    const userLocation = typeof user.location === 'string' ? user.location.trim().toLowerCase() : '';
+    if (!userLocation) return;
+    for (const customer of customersByName.values()) {
+      if (customer.locations.has(userLocation)) {
+        customer.userIds.add(user.id);
+        user.customerId = customer.id;
+        if (!customer.primaryFleetId) {
+          const [firstFleet] = customer.fleetIds.values();
+          customer.primaryFleetId = firstFleet || generateFleetId(Array.from(customersByName.values()).map(entry => ({
+            id: entry.id,
+            primaryFleetId: entry.primaryFleetId,
+            fleetIds: Array.from(entry.fleetIds)
+          })));
+        }
+        break;
+      }
+    }
+  });
+
+  return Array.from(customersByName.values()).map(customer => ({
+    id: customer.id,
+    name: customer.name,
+    createdAt: customer.createdAt,
+    updatedAt: customer.updatedAt,
+    createdByRole: customer.createdByRole,
+    primaryFleetId: customer.primaryFleetId,
+    fleetIds: Array.from(customer.fleetIds),
+    userIds: Array.from(customer.userIds),
+    locations: Array.from(customer.locations.values())
+  }));
+}
+
+function findCustomerById(customers, customerId) {
+  if (!customerId) return null;
+  return customers.find(customer => customer.id === customerId) || null;
+}
+
+function findCustomerByName(customers, name) {
+  if (typeof name !== 'string') return null;
+  const normalised = name.trim().toLowerCase();
+  if (!normalised) return null;
+  return customers.find(customer => customer.name?.toLowerCase() === normalised) || null;
+}
+
+function findCustomerLocation(customers, locationId) {
+  for (const customer of customers) {
+    const location = (customer.locations || []).find(entry => entry.id === locationId);
+    if (location) {
+      return { customer, location };
+    }
+  }
+  return null;
+}
+
+function ensureCustomerFleetId(store, customer) {
+  if (!customer) return null;
+  if (!Array.isArray(customer.fleetIds)) {
+    customer.fleetIds = [];
+  }
+  if (customer.primaryFleetId) {
+    if (!customer.fleetIds.includes(customer.primaryFleetId)) {
+      customer.fleetIds.push(customer.primaryFleetId);
+    }
+    return customer.primaryFleetId;
+  }
+
+  const fleetId = generateFleetId(store.customers || []);
+  customer.primaryFleetId = fleetId;
+  if (!customer.fleetIds.includes(fleetId)) {
+    customer.fleetIds.push(fleetId);
+  }
+  return fleetId;
+}
+
+function buildLocationDisplayName(customer, locationName) {
+  const trimmed = typeof locationName === 'string' ? locationName.trim() : '';
+  if (!trimmed) {
+    return null;
+  }
+  if (trimmed.toLowerCase().startsWith(`${customer.name.toLowerCase()} –`)) {
+    return trimmed;
+  }
+  return `${customer.name} – ${trimmed}`;
+}
+
+function isMachineIdUsed(id) {
+  if (!id) return false;
+  return Boolean(getFleetById(id));
+}
+
+function generateMachineId(customer) {
+  const prefix = slugify(customer.name || '')
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 3)
+    .toUpperCase() || 'MC';
+  let candidate = null;
+  do {
+    candidate = `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  } while (isMachineIdUsed(candidate));
+  return candidate;
+}
+
+function linkCustomerUserInternal(store, customer, userId) {
+  const user = USERS.find(entry => entry.id === userId);
+  if (!user) {
+    throw new Error('Gebruiker niet gevonden.');
+  }
+
+  if (!Array.isArray(customer.userIds)) {
+    customer.userIds = [];
+  }
+  if (!customer.userIds.includes(userId)) {
+    customer.userIds.push(userId);
+  }
+
+  user.role = 'Klant';
+  user.customerId = customer.id;
+  customer.updatedAt = new Date().toISOString();
+
+  return { customer, user };
 }
 
 function resolveFleetName(fleetId) {
@@ -506,4 +829,236 @@ export async function rejectAccountRequest({ id, assignedByProfileId }) {
   existing.updatedAt = now;
 
   return upsertAccountRequest(existing);
+}
+
+export async function fetchCustomers() {
+  const store = ensureStore();
+  return cloneCustomers(store.customers || []);
+}
+
+export async function createCustomer({ name, actorRole, linkedUserId, createdByProfileId } = {}) {
+  if (normaliseRole(actorRole) !== 'beheerder') {
+    throw new Error('Alleen beheerders kunnen klanten aanmaken.');
+  }
+
+  const trimmedName = typeof name === 'string' ? name.trim() : '';
+  if (!trimmedName) {
+    throw new Error('Klantnaam is verplicht.');
+  }
+
+  const store = ensureStore();
+  if (!Array.isArray(store.customers)) {
+    store.customers = buildDefaultCustomers();
+  }
+
+  if (findCustomerByName(store.customers, trimmedName)) {
+    throw new Error('Klant bestaat al.');
+  }
+
+  const customerId = generateCustomerId(store.customers, trimmedName);
+  const fleetId = generateFleetId(store.customers);
+  const now = new Date().toISOString();
+  const newCustomer = {
+    id: customerId,
+    name: trimmedName,
+    createdAt: now,
+    updatedAt: now,
+    createdByRole: 'Beheerder',
+    createdByProfileId: createdByProfileId ?? null,
+    primaryFleetId: fleetId,
+    fleetIds: [fleetId],
+    userIds: [],
+    locations: []
+  };
+
+  store.customers.push(newCustomer);
+
+  if (linkedUserId) {
+    linkCustomerUserInternal(store, newCustomer, linkedUserId);
+  }
+
+  persistStore();
+
+  return cloneCustomer(newCustomer);
+}
+
+export async function linkCustomerUser({ customerId, userId, actorRole } = {}) {
+  if (normaliseRole(actorRole) !== 'beheerder') {
+    throw new Error('Alleen beheerders kunnen klantgebruikers koppelen.');
+  }
+
+  if (!customerId || !userId) {
+    throw new Error('Klant en gebruiker zijn verplicht.');
+  }
+
+  const store = ensureStore();
+  if (!Array.isArray(store.customers)) {
+    store.customers = buildDefaultCustomers();
+  }
+
+  const customer = findCustomerById(store.customers, customerId);
+  if (!customer) {
+    throw new Error('Klant niet gevonden.');
+  }
+
+  const { user } = linkCustomerUserInternal(store, customer, userId);
+  persistStore();
+
+  return { customer: cloneCustomer(customer), user: { ...user } };
+}
+
+export async function createCustomerLocation({
+  customerId,
+  name,
+  actorRole,
+  actorCustomerId
+} = {}) {
+  if (!customerId) {
+    throw new Error('Klant is verplicht.');
+  }
+
+  const role = normaliseRole(actorRole);
+  if (role !== 'beheerder' && role !== 'klant') {
+    throw new Error('Onbekende actorrol voor locatiebeheer.');
+  }
+
+  const store = ensureStore();
+  if (!Array.isArray(store.customers)) {
+    store.customers = buildDefaultCustomers();
+  }
+
+  const customer = findCustomerById(store.customers, customerId);
+  if (!customer) {
+    throw new Error('Klant niet gevonden.');
+  }
+
+  if (role === 'klant' && actorCustomerId && actorCustomerId !== customer.id) {
+    throw new Error('Klant kan alleen eigen locaties beheren.');
+  }
+
+  const displayName = buildLocationDisplayName(customer, name);
+  if (!displayName) {
+    throw new Error('Locatienaam is verplicht.');
+  }
+
+  const existingLocation = (customer.locations || []).find(
+    entry => entry.displayName?.toLowerCase() === displayName.toLowerCase()
+  );
+  if (existingLocation) {
+    throw new Error('Locatie bestaat al voor deze klant.');
+  }
+
+  const now = new Date().toISOString();
+  const shortName = deriveSubLocation(displayName, customer.name) || displayName;
+  const location = {
+    id: generateLocationId(customer, displayName),
+    name: shortName,
+    displayName,
+    createdAt: now,
+    updatedAt: now,
+    createdByRole: role === 'beheerder' ? 'Beheerder' : 'Klant'
+  };
+
+  if (!Array.isArray(customer.locations)) {
+    customer.locations = [];
+  }
+  customer.locations.push(location);
+  customer.updatedAt = now;
+
+  setLocations([...LOCATIONS, displayName]);
+  persistStore();
+
+  return cloneCustomerLocation(location);
+}
+
+export async function addMachineToCustomerLocation({
+  customerId,
+  locationId,
+  machine = {},
+  actorRole,
+  actorCustomerId
+} = {}) {
+  if (!customerId || !locationId) {
+    throw new Error('Klant en locatie zijn verplicht.');
+  }
+
+  const role = normaliseRole(actorRole);
+  if (role !== 'beheerder' && role !== 'klant') {
+    throw new Error('Onbekende actorrol voor machinebeheer.');
+  }
+
+  const store = ensureStore();
+  if (!Array.isArray(store.customers)) {
+    store.customers = buildDefaultCustomers();
+  }
+
+  const context = findCustomerLocation(store.customers, locationId);
+  if (!context || context.customer.id !== customerId) {
+    throw new Error('Locatie hoort niet bij de geselecteerde klant.');
+  }
+
+  const { customer, location } = context;
+  if (role === 'klant' && actorCustomerId && actorCustomerId !== customer.id) {
+    throw new Error('Klant kan alleen machines voor eigen locaties beheren.');
+  }
+
+  const model = typeof machine.model === 'string' && machine.model.trim() ? machine.model.trim() : null;
+  if (!model) {
+    throw new Error('Model is verplicht voor een machine.');
+  }
+
+  let machineId = typeof machine.id === 'string' ? machine.id.trim() : '';
+  if (machineId) {
+    if (isMachineIdUsed(machineId)) {
+      throw new Error('Machine-ID is al in gebruik.');
+    }
+  } else {
+    machineId = generateMachineId(customer);
+  }
+
+  const fleetId = ensureCustomerFleetId(store, customer);
+  const now = new Date().toISOString();
+  const hoursDate = machine.hoursDate || now.slice(0, 10);
+  const reference = machine.reference || machine.ref || `${model} ${location.name}`;
+  const fleetName = customer.name;
+
+  const rawMachine = {
+    id: machineId,
+    ref: reference,
+    model,
+    modelType: machine.modelType || 'Onbekend',
+    bmwStatus: machine.bmwStatus || 'Goedgekeurd',
+    bmwExpiry: machine.bmwExpiry || null,
+    hours: typeof machine.hours === 'number' ? machine.hours : 0,
+    hoursDate,
+    location: location.displayName,
+    customer: {
+      name: customer.name,
+      subLocation: location.name
+    },
+    fleetId,
+    fleetName,
+    activity: [],
+    maintenanceHistory: [],
+    bmwt: machine.bmwt || { status: 'Goedgekeurd', expiry: null },
+    documents: [],
+    contract:
+      machine.contract ||
+      {
+        nummer: '—',
+        start: null,
+        eind: null,
+        uren: null,
+        type: '—',
+        model
+      },
+    active: machine.active ?? true
+  };
+
+  setFleet([...FLEET, rawMachine]);
+  const created = getFleetById(machineId);
+  customer.updatedAt = now;
+  persistStore();
+
+  return cloneFleetItem(created);
 }
