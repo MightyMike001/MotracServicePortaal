@@ -31,6 +31,69 @@ const DEFAULT_FLEET = [
       { id: 'M-1001', type: 'Onderhoud', desc: 'Periodieke servicebeurt', status: 'Afgerond', date: '2025-06-20' },
       { id: 'M-1010', type: 'Storing', desc: 'Mast-sensor foutcode', status: 'Open', date: '2025-10-01' }
     ],
+    maintenanceHistory: [
+      {
+        id: 'MH-2025-09',
+        type: 'BMWT-keuring',
+        status: 'Afgerond',
+        description: 'Jaarlijkse BMWT-keuring uitgevoerd zonder bijzonderheden.',
+        date: '2025-09-15',
+        technician: 'L. de Bruin',
+        hours: '1.523 uur'
+      },
+      {
+        id: 'MH-2025-06',
+        type: 'Periodiek onderhoud',
+        status: 'Afgerond',
+        description: 'Uitgebreide inspectie en smering van mast en kettingen.',
+        date: '2025-06-20',
+        technician: 'P. van Dijk',
+        hours: '1.480 uur'
+      },
+      {
+        id: 'MH-2025-10',
+        type: 'Storing',
+        status: 'In behandeling',
+        description: 'Diagnose op mast-sensor foutcode, vervolgbezoek ingepland.',
+        date: '2025-10-02',
+        technician: 'Serviceteam Noord'
+      }
+    ],
+    bmwt: {
+      status: 'Goedgekeurd',
+      expiry: '2026-03-15',
+      lastInspection: '2025-03-14',
+      inspector: 'DEKRA Inspecties',
+      remarks: 'Volgende preventieve check ingepland voor Q1 2026.',
+      certificateUrl: '#',
+      certificateName: 'BMWT-certificaat E16 2025.pdf'
+    },
+    documents: [
+      {
+        id: 'DOC-E16-001',
+        name: 'Gebruikershandleiding Linde E16.pdf',
+        type: 'Handleiding',
+        updatedAt: '2024-11-02',
+        size: '1,2 MB',
+        url: '#'
+      },
+      {
+        id: 'DOC-E16-002',
+        name: 'Onderhoudsrapport juni 2025.pdf',
+        type: 'Onderhoudsrapport',
+        updatedAt: '2025-06-21',
+        size: '860 kB',
+        url: '#'
+      },
+      {
+        id: 'DOC-E16-003',
+        name: 'BMWT-certificaat 2025.pdf',
+        type: 'Certificaat',
+        updatedAt: '2025-03-14',
+        size: '540 kB',
+        url: '#'
+      }
+    ],
     contract: {
       nummer: 'CTR-2023-ALM-001',
       start: '2023-01-01',
@@ -57,6 +120,53 @@ const DEFAULT_FLEET = [
     },
     fleetId: 'CF-DEMO',
     activity: [],
+    maintenanceHistory: [
+      {
+        id: 'MH-2025-08',
+        type: 'Veiligheidsinspectie',
+        status: 'Afgerond',
+        description: 'Veiligheidscontrole uitgevoerd, geen gebreken gevonden.',
+        date: '2025-08-05',
+        technician: 'S. Reinders',
+        hours: '3.360 uur'
+      },
+      {
+        id: 'MH-2025-05',
+        type: 'Periodiek onderhoud',
+        status: 'Afgerond',
+        description: 'Vervanging filters en controle remsysteem.',
+        date: '2025-05-18',
+        technician: 'M. Koster',
+        hours: '3.210 uur'
+      }
+    ],
+    bmwt: {
+      status: 'Goedgekeurd',
+      expiry: '2025-12-01',
+      lastInspection: '2024-12-12',
+      inspector: 'TÜV Nederland',
+      remarks: 'Let op slijtage van banden bij volgende inspectie.',
+      certificateUrl: '#',
+      certificateName: 'BMWT-certificaat H25 2024.pdf'
+    },
+    documents: [
+      {
+        id: 'DOC-H25-001',
+        name: 'Handleiding Linde H25.pdf',
+        type: 'Handleiding',
+        updatedAt: '2024-04-03',
+        size: '1,8 MB',
+        url: '#'
+      },
+      {
+        id: 'DOC-H25-002',
+        name: 'Onderhoudsoverzicht 2025.pdf',
+        type: 'Onderhoudsrapport',
+        updatedAt: '2025-05-18',
+        size: '910 kB',
+        url: '#'
+      }
+    ],
     contract: {
       nummer: 'CTR-2022-ZWD-019',
       start: '2022-05-15',
@@ -83,6 +193,68 @@ const DEFAULT_FLEET = [
     fleetId: 'CF-VANDIJK',
     activity: [
       { id: 'M-1020', type: 'Schade', desc: 'Vork beschadigd', status: 'Open', date: '2025-10-03' }
+    ],
+    maintenanceHistory: [
+      {
+        id: 'MH-2025-07',
+        type: 'Correctief onderhoud',
+        status: 'Afgerond',
+        description: 'Vervanging hydraulische slang mastcircuit.',
+        date: '2025-07-09',
+        technician: 'G. Hermans',
+        hours: '720 uur'
+      },
+      {
+        id: 'MH-2025-09',
+        type: 'BMWT-keuring',
+        status: 'Afkeur',
+        description: 'Keuring afgekeurd wegens beschadigde vork, herkeuring vereist.',
+        date: '2025-09-01',
+        technician: 'Inspectie Rotterdam'
+      },
+      {
+        id: 'MH-2025-10',
+        type: 'Schade-opvolging',
+        status: 'Open',
+        description: 'Herstel van beschadigde vork gepland, onderdelen besteld.',
+        date: '2025-10-05',
+        technician: 'Serviceteam Zuid'
+      }
+    ],
+    bmwt: {
+      status: 'Afkeur',
+      expiry: '2025-09-01',
+      lastInspection: '2025-09-01',
+      inspector: 'BMWT Inspecties Rotterdam',
+      remarks: 'Herkeuring vereist na vervanging vork.',
+      certificateUrl: '#',
+      certificateName: 'BMWT-rapport E20 2025.pdf'
+    },
+    documents: [
+      {
+        id: 'DOC-E20-001',
+        name: 'Gebruikershandleiding Linde E20.pdf',
+        type: 'Handleiding',
+        updatedAt: '2024-07-15',
+        size: '1,5 MB',
+        url: '#'
+      },
+      {
+        id: 'DOC-E20-002',
+        name: 'Schaderapport september 2025.pdf',
+        type: 'Schaderapport',
+        updatedAt: '2025-09-03',
+        size: '640 kB',
+        url: '#'
+      },
+      {
+        id: 'DOC-E20-003',
+        name: 'Onderhoudsplan 2025-2026.pdf',
+        type: 'Onderhoudsplan',
+        updatedAt: '2025-05-01',
+        size: '780 kB',
+        url: '#'
+      }
     ],
     contract: {
       nummer: 'CTR-2024-VNL-003',
@@ -207,6 +379,96 @@ function normaliseFleetActivity(activity = []) {
   });
 }
 
+function normaliseMaintenanceHistory(history = [], fallbackActivity = []) {
+  const source = Array.isArray(history) && history.length ? history : fallbackActivity;
+
+  return (Array.isArray(source) ? source : [])
+    .map((entry, index) => {
+      const id = entry?.id || entry?.code || `maintenance-${index}`;
+      const type = pickString(entry?.type, entry?.title, entry?.category, 'Onderhoud');
+      const status = pickString(entry?.status, entry?.state, 'Onbekend');
+      const description = pickString(entry?.description, entry?.desc, entry?.summary, entry?.notes, entry?.detail, '—');
+      const date = entry?.date || entry?.performedAt || entry?.performed_at || entry?.updatedAt || entry?.updated_at || entry?.completedAt || entry?.completed_at || null;
+      const technician = pickString(entry?.technician, entry?.engineer, entry?.performedBy, entry?.performed_by, entry?.owner, entry?.assignedTo, entry?.assigned_to);
+      const hours = pickString(
+        entry?.hours,
+        entry?.hoursReading,
+        entry?.hours_reading,
+        entry?.urenstand,
+        entry?.urenstand_datum ? `${entry.urenstand} (${entry.urenstand_datum})` : null,
+        entry?.meterReading,
+        entry?.meter_reading
+      );
+
+      return {
+        id,
+        type,
+        status,
+        description,
+        date,
+        technician: technician || null,
+        hours: hours || null
+      };
+    })
+    .filter(item => item.type || item.description || item.date)
+    .sort((a, b) => {
+      const aTime = new Date(a.date ?? 0).valueOf();
+      const bTime = new Date(b.date ?? 0).valueOf();
+      return Number.isNaN(bTime - aTime) ? 0 : bTime - aTime;
+    });
+}
+
+function normaliseBmwDetails(rawDetails = null, { status: fallbackStatus, expiry: fallbackExpiry } = {}) {
+  const source = rawDetails && typeof rawDetails === 'object' ? rawDetails : {};
+
+  return {
+    status: pickString(source.status, source.bmwStatus, fallbackStatus, '—'),
+    expiry: source.expiry || source.expirationDate || source.expiration_date || fallbackExpiry || null,
+    lastInspection:
+      source.lastInspection ||
+      source.last_inspection ||
+      source.lastCheck ||
+      source.last_check ||
+      source.inspectionDate ||
+      source.inspection_date ||
+      null,
+    inspector: pickString(source.inspector, source.inspectionCompany, source.inspection_company, source.partner, null),
+    remarks: pickString(source.remarks, source.notes, source.comment, null),
+    certificateUrl: source.certificateUrl || source.certificate_url || source.certificate || null,
+    certificateName: pickString(source.certificateName, source.certificate_name, source.certificateTitle, null)
+  };
+}
+
+function normaliseDocumentList(documents = []) {
+  if (!Array.isArray(documents)) {
+    return [];
+  }
+
+  return documents
+    .map((doc, index) => {
+      const name = pickString(doc?.name, doc?.title, doc?.filename, doc?.file_name);
+      if (!name) {
+        return null;
+      }
+
+      return {
+        id: doc?.id || doc?.documentId || doc?.document_id || `doc-${index}`,
+        name,
+        type: pickString(doc?.type, doc?.category, doc?.documentType, doc?.document_type, 'Document'),
+        updatedAt:
+          doc?.updatedAt ||
+          doc?.updated_at ||
+          doc?.modifiedAt ||
+          doc?.modified_at ||
+          doc?.date ||
+          null,
+        size: pickString(doc?.size, doc?.fileSize, doc?.file_size, doc?.filesize, null),
+        url: doc?.url || doc?.href || doc?.link || '#'
+      };
+    })
+    .filter(Boolean);
+}
+
 function normaliseFleetCustomer(item = {}) {
   const rawCustomer =
     item.customer ||
@@ -281,6 +543,15 @@ function normaliseFleetCustomer(item = {}) {
 function normaliseFleetItem(item = {}) {
   const fleetId = item.fleetId || item.customerFleetId || item.customer_fleet_id || null;
   const activity = normaliseFleetActivity(item.activity);
+  const maintenanceHistory = normaliseMaintenanceHistory(
+    item.maintenanceHistory || item.maintenance_history || item.history,
+    activity
+  );
+  const bmwt = normaliseBmwDetails(
+    item.bmwt || item.bmwInspection || item.bmw_inspection || item.bmwData || item.bmw_data,
+    { status: item.bmwStatus, expiry: item.bmwExpiry }
+  );
+  const documents = normaliseDocumentList(item.documents || item.files || item.attachments);
   const hoursValue =
     item.hours ??
     item.hoursReading ??
@@ -323,6 +594,9 @@ function normaliseFleetItem(item = {}) {
     odo: hoursValue,
     odoDate: hoursDateValue,
     activity,
+    maintenanceHistory,
+    bmwt,
+    documents,
     openActivityCount: activity.filter(entry => entry?.status === 'Open').length,
     contract: normaliseContract(item.contract, item.model),
     active: typeof item.active === 'boolean' ? item.active : true
