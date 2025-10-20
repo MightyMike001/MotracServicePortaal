@@ -2,17 +2,26 @@ const STORAGE_KEY = 'theme';
 const DARK = 'dark';
 const LIGHT = 'light';
 
-function applyTheme(theme) {
-  const root = document.documentElement;
-  if (theme === DARK) {
-    root.setAttribute('data-theme', DARK);
-  } else {
-    root.removeAttribute('data-theme');
-  }
+function persistTheme(theme) {
   try {
     localStorage.setItem(STORAGE_KEY, theme);
   } catch (error) {
     console.error('Thema kon niet opgeslagen worden:', error);
+  }
+}
+
+function applyTheme(theme, { persist = true } = {}) {
+  const root = document.documentElement;
+  if (theme === DARK) {
+    root.setAttribute('data-theme', DARK);
+    root.style.colorScheme = 'dark';
+  } else {
+    root.removeAttribute('data-theme');
+    root.style.colorScheme = 'light';
+  }
+
+  if (persist) {
+    persistTheme(theme);
   }
   updateToggle(theme);
 }
@@ -58,7 +67,7 @@ export function initThemeToggle() {
   const defaultTheme = prefersDark.matches ? DARK : LIGHT;
   const initialTheme = storedTheme === DARK || storedTheme === LIGHT ? storedTheme : defaultTheme;
 
-  applyTheme(initialTheme);
+  applyTheme(initialTheme, { persist: storedTheme === DARK || storedTheme === LIGHT });
 
   toggle.addEventListener('click', () => {
     const nextTheme = getActiveTheme() === DARK ? LIGHT : DARK;
@@ -75,7 +84,7 @@ export function initThemeToggle() {
       }
     })();
     if (stored !== DARK && stored !== LIGHT) {
-      applyTheme(event.matches ? DARK : LIGHT);
+      applyTheme(event.matches ? DARK : LIGHT, { persist: false });
     }
   });
 }
