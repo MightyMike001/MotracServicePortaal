@@ -397,9 +397,25 @@
           </table>
         </div>
         <div class="flex justify-end items-center gap-2 text-sm">
-          <button id="usersPrev" class="px-3 py-1 border rounded-lg" title="Vorige pagina gebruikers">Vorige</button>
-          <span id="usersPageInfo" class="text-gray-500"></span>
-          <button id="usersNext" class="px-3 py-1 border rounded-lg" title="Volgende pagina gebruikers">Volgende</button>
+          <button
+            id="usersPrev"
+            type="button"
+            class="px-3 py-1 border rounded-lg"
+            title="Vorige pagina gebruikers"
+            aria-label="Vorige pagina"
+          >
+            Vorige
+          </button>
+          <span id="usersPageInfo" class="text-gray-500" role="status" aria-live="polite"></span>
+          <button
+            id="usersNext"
+            type="button"
+            class="px-3 py-1 border rounded-lg"
+            title="Volgende pagina gebruikers"
+            aria-label="Volgende pagina"
+          >
+            Volgende
+          </button>
         </div>
       </section>
 

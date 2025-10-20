@@ -268,6 +268,9 @@ function setupUsersSortControls() {
   if (!buttons.length) return;
 
   buttons.forEach(button => {
+    if (button.type !== 'button') {
+      button.type = 'button';
+    }
     button.addEventListener('click', () => {
       const key = button.dataset.usersSort;
       if (!key || !SORT_SELECTORS[key]) return;
@@ -326,8 +329,23 @@ function setPageInfo(pageInfoEl, currentPage, totalPages, totalItems, pageItems)
     return;
   }
   const start = (currentPage - 1) * state.usersPageSize + 1;
-  const end = start + pageItems.length - 1;
+  const end = pageItems.length ? start + pageItems.length - 1 : start;
   pageInfoEl.textContent = `Pagina ${currentPage} van ${totalPages} • ${start}–${end} van ${totalItems} gebruikers`;
+}
+
+function setPaginationControls(prevButton, nextButton, currentPage, totalPages) {
+  const total = Number.isFinite(totalPages) && totalPages > 0 ? totalPages : 1;
+  if (prevButton) {
+    const disablePrev = currentPage <= 1;
+    prevButton.disabled = disablePrev;
+    prevButton.setAttribute('aria-disabled', disablePrev ? 'true' : 'false');
+  }
+
+  if (nextButton) {
+    const disableNext = currentPage >= total;
+    nextButton.disabled = disableNext;
+    nextButton.setAttribute('aria-disabled', disableNext ? 'true' : 'false');
+  }
 }
 
 /**
@@ -512,6 +530,9 @@ export function renderUsers() {
   const sorted = sortUsersList(filtered);
   const totalItems = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / state.usersPageSize));
+  if (state.usersPage < 1) {
+    state.usersPage = 1;
+  }
   if (state.usersPage > totalPages) {
     state.usersPage = totalPages;
   }
@@ -527,8 +548,7 @@ export function renderUsers() {
   }
 
   setPageInfo(pageInfo, state.usersPage, totalPages, totalItems, pageItems);
-  prevButton.disabled = state.usersPage <= 1;
-  nextButton.disabled = state.usersPage >= totalPages;
+  setPaginationControls(prevButton, nextButton, state.usersPage, totalPages);
 
   renderAccountRequests();
 }
