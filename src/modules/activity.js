@@ -170,7 +170,7 @@ function renderAttachmentPreview(list) {
   if (!list) return;
 
   if (!pendingTicketAttachments.length) {
-    list.innerHTML = '<p class="text-xs text-gray-500">Geen bijlagen geselecteerd.</p>';
+    list.innerHTML = '<p class="text-xs text-gray-500">Nog geen foto’s geselecteerd.</p>';
     return;
   }
 
@@ -221,6 +221,13 @@ function renderAttachmentPreviewVisual(item) {
  */
 function removeAttachment(id) {
   pendingTicketAttachments = pendingTicketAttachments.filter(item => item.id !== id);
+}
+
+/**
+ * Indicates whether there are pending attachments selected for the ticket.
+ */
+export function hasPendingTicketAttachments() {
+  return pendingTicketAttachments.length > 0;
 }
 
 /**

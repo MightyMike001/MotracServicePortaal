@@ -9,6 +9,7 @@ import {
   openActivityDetail,
   closeActivityDetail,
   initActivityComposer,
+  hasPendingTicketAttachments,
   consumeTicketAttachments,
   resetTicketAttachments,
   refreshMeldingen
@@ -77,6 +78,43 @@ export function wireEvents() {
     if (!mainNav) return;
     mainNav.classList.add('hidden');
   };
+
+  const setTicketDateTimeDefaults = () => {
+    const now = new Date();
+    const dateInput = $('#ticketDate');
+    if (dateInput) {
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      dateInput.value = `${year}-${month}-${day}`;
+    }
+    const timeInput = $('#ticketTime');
+    if (timeInput) {
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      timeInput.value = `${hours}:${minutes}`;
+    }
+  };
+
+  const resetTicketForm = truckId => {
+    resetTicketAttachments();
+    const ticketSelect = $('#ticketTruck');
+    if (ticketSelect && truckId) {
+      ticketSelect.value = truckId;
+    }
+    const orderInput = $('#ticketOrder');
+    if (orderInput) {
+      orderInput.value = '';
+      orderInput.removeAttribute('aria-invalid');
+    }
+    const descInput = $('#ticketDesc');
+    if (descInput) {
+      descInput.value = '';
+    }
+    setTicketDateTimeDefaults();
+  };
+
+  setTicketDateTimeDefaults();
 
   let ticketAutoCloseTimer = null;
   const cancelTicketAutoClose = () => {
@@ -277,11 +315,7 @@ export function wireEvents() {
     if (!truck) return;
 
     if (action === 'newTicket' || action === 'newTicketFromDetail') {
-      const ticketSelect = $('#ticketTruck');
-      if (ticketSelect) {
-        ticketSelect.value = truck.id;
-      }
-      resetTicketAttachments();
+      resetTicketForm(truck.id);
       cancelTicketAutoClose();
       openModal('#modalTicket');
       return;
@@ -391,10 +425,12 @@ export function wireEvents() {
   });
 
   $('#btnNewTicket')?.addEventListener('click', () => {
+    resetTicketForm();
     cancelTicketAutoClose();
     openModal('#modalTicket');
   });
   $('#btnNewTicketMobile')?.addEventListener('click', () => {
+    resetTicketForm();
     cancelTicketAutoClose();
     openModal('#modalTicket');
     collapseMobileMenu();
@@ -404,8 +440,43 @@ export function wireEvents() {
     const type = $('#ticketType')?.value;
     const ticketDescInput = $('#ticketDesc');
     const desc = ticketDescInput ? ticketDescInput.value.trim() : '';
+    const orderInput = $('#ticketOrder');
+    const orderNumber = orderInput ? orderInput.value.trim() : '';
+    const dateValue = $('#ticketDate')?.value;
+    const timeValue = $('#ticketTime')?.value;
+
     if (!id || !desc) {
       showToast('Vul minimaal truck en omschrijving in.');
+      return;
+    }
+
+    const orderIsValid = /^\d{4,}$/.test(orderNumber);
+    if (!orderIsValid) {
+      showToast('Opdrachtnummer moet minimaal 4 cijfers bevatten.');
+      if (orderInput) {
+        orderInput.setAttribute('aria-invalid', 'true');
+        orderInput.focus();
+      }
+      return;
+    }
+
+    if (orderInput) {
+      orderInput.removeAttribute('aria-invalid');
+    }
+
+    if (!dateValue || !timeValue) {
+      showToast('Vul datum en tijd in.');
+      return;
+    }
+
+    const scheduledDate = new Date(`${dateValue}T${timeValue}`);
+    if (Number.isNaN(scheduledDate.getTime())) {
+      showToast('Ongeldige datum of tijd.');
+      return;
+    }
+
+    if (!hasPendingTicketAttachments()) {
+      showToast('Voeg minimaal één foto toe bij de melding.');
       return;
     }
 
@@ -415,12 +486,14 @@ export function wireEvents() {
       return;
     }
     const attachments = consumeTicketAttachments();
+    const reportedAt = scheduledDate.toISOString();
     truck.activity.push({
       id: `M-${Math.floor(1000 + Math.random() * 9000)}`,
       type,
       desc,
       status: 'Open',
-      date: new Date().toISOString(),
+      date: reportedAt,
+      orderNumber,
       attachments,
       createdBy: state.profile?.display_name || state.profile?.email || 'Onbekend'
     });
@@ -429,7 +502,7 @@ export function wireEvents() {
     renderFleet();
     await refreshMeldingen();
 
-    showToast('Melding succesvol aangemaakt.', { variant: 'success' });
+    showToast('Storingsmelding succesvol aangemaakt', { variant: 'success' });
 
     window.clearTimeout(ticketAutoCloseTimer);
     ticketAutoCloseTimer = window.setTimeout(() => {
@@ -438,18 +511,7 @@ export function wireEvents() {
       ticketAutoCloseTimer = null;
     }, 2000);
 
-    const orderInput = $('#ticketOrder');
-    if (orderInput) {
-      orderInput.value = '';
-    }
-    const ticketDesc = $('#ticketDesc');
-    if (ticketDesc) {
-      ticketDesc.value = '';
-    }
-    const ticketPhotos = $('#ticketPhotos');
-    if (ticketPhotos) {
-      ticketPhotos.value = '';
-    }
+    resetTicketForm(id);
   });
 
   $('#odoSave')?.addEventListener('click', event => {

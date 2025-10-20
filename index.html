@@ -522,7 +522,15 @@
         </div>
         <div>
           <label class="text-sm text-gray-600">Opdrachtnummer</label>
-          <input id="ticketOrder" type="text" class="mt-1 w-full border rounded-lg px-3 py-2" />
+          <input
+            id="ticketOrder"
+            type="text"
+            inputmode="numeric"
+            pattern="\d{4,}"
+            minlength="4"
+            required
+            class="mt-1 w-full border rounded-lg px-3 py-2"
+          />
         </div>
         <div>
           <label class="text-sm text-gray-600">Type melding</label>
@@ -532,13 +540,21 @@
             <option>Schade</option>
           </select>
         </div>
+        <div>
+          <label class="text-sm text-gray-600">Datum</label>
+          <input id="ticketDate" type="date" required class="mt-1 w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-600">Tijd</label>
+          <input id="ticketTime" type="time" required class="mt-1 w-full border rounded-lg px-3 py-2" />
+        </div>
         <div class="sm:col-span-2">
           <label class="text-sm text-gray-600">Omschrijving</label>
           <textarea id="ticketDesc" rows="4" class="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Beschrijf het probleem en locatie van de truck"></textarea>
         </div>
         <div class="sm:col-span-2" data-ticket-photos-container>
           <label class="text-sm text-gray-600">Foto’s</label>
-          <input id="ticketPhotos" type="file" multiple class="mt-1 w-full border rounded-lg px-3 py-2" />
+          <input id="ticketPhotos" type="file" accept="image/*" multiple required class="mt-1 w-full border rounded-lg px-3 py-2" />
           <p class="text-xs text-gray-500 mt-1">Voor urgente storingen: neem telefonisch contact op.</p>
         </div>
       </div>
