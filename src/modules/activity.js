@@ -3,6 +3,7 @@ import { state } from '../state.js';
 import { $, fmtDate } from '../utils.js';
 import { filterFleetByAccess, canViewFleetAsset } from './access.js';
 import { renderFleet } from './fleet.js';
+import { syncFiltersToUrl } from './filterSync.js';
 import { showToast } from './ui/toast.js';
 
 const STATUS_OPTIONS = [
@@ -50,6 +51,7 @@ function ensureStatusFilter() {
   statusFilter = container.querySelector('select');
   statusFilter.addEventListener('change', event => {
     state.activityFilter.status = event.target.value;
+    syncFiltersToUrl();
     renderActivity();
   });
 

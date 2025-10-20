@@ -69,9 +69,13 @@ function getLocationOptions(accessibleFleet) {
  */
 function resolveFilterLocation(allowedLocations) {
   const stored = getLocationPreference();
-  const desired = stored || state.fleetFilter.location;
+  const hasUrlOverride = state.fleetFilter?.source === 'url';
+  const desired = hasUrlOverride
+    ? state.fleetFilter.location
+    : stored || state.fleetFilter.location;
   const resolved = ensureAccessibleLocation(desired, allowedLocations);
   state.fleetFilter.location = resolved;
+  state.fleetFilter.source = null;
   persistLocationPreference(resolved);
   return resolved;
 }

@@ -1,5 +1,5 @@
 export const state = {
-  fleetFilter: { location: 'Alle locaties', query: '' },
+  fleetFilter: { location: 'Alle locaties', query: '', source: null },
   activityFilter: { status: 'all' },
   selectedTruckId: null,
   usersPage: 1,

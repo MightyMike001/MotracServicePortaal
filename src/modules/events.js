@@ -3,6 +3,7 @@ import { state } from '../state.js';
 import { $, $$, fmtDate, openModal, closeModals, kv, formatHoursLabel } from '../utils.js';
 import { showToast } from './ui/toast.js';
 import { renderFleet, updateLocationFilter, openBmwEditor } from './fleet.js';
+import { applyFiltersFromUrl, resetFilters, syncFiltersToUrl } from './filterSync.js';
 import {
   renderActivity,
   openActivityDetail,
@@ -26,12 +27,42 @@ export function wireEvents() {
 
   initActivityComposer();
   initRouter(switchMainTab);
+  applyFiltersFromUrl({ updateDom: false });
 
   const getAccessibleTruck = truckId => {
     if (!truckId) return null;
     const truck = getFleetById(truckId);
     return truck && canViewFleetAsset(truck) ? truck : null;
   };
+
+  const handleLocationChange = nextLocation => {
+    const targetLocation = nextLocation || 'Alle locaties';
+    const locationFilter = $('#locationFilter');
+    if (locationFilter && locationFilter.value !== targetLocation) {
+      locationFilter.value = targetLocation;
+    }
+    resetFilters();
+    updateLocationFilter(targetLocation);
+    renderFleet();
+    renderActivity();
+    syncFiltersToUrl();
+  };
+
+  window.addEventListener('popstate', () => {
+    const { location, locationChanged } = applyFiltersFromUrl({ fallbackToStored: false });
+    const nextLocation = location || state.fleetFilter.location || 'Alle locaties';
+    if (locationChanged) {
+      updateLocationFilter(nextLocation);
+    }
+    if (locationChanged || location != null) {
+      const locationFilter = $('#locationFilter');
+      if (locationFilter) {
+        locationFilter.value = nextLocation;
+      }
+    }
+    renderFleet();
+    renderActivity();
+  });
 
   function closeKebabMenus(except = null) {
     $$('.kebab-menu').forEach(menu => {
@@ -124,12 +155,11 @@ export function wireEvents() {
   };
 
   $('#locationFilter')?.addEventListener('change', event => {
-    updateLocationFilter(event.target.value);
-    renderFleet();
-    renderActivity();
+    handleLocationChange(event.target.value);
   });
   const applyFleetSearch = () => {
     state.fleetFilter.query = $('#searchInput').value;
+    syncFiltersToUrl();
     renderFleet();
   };
 
@@ -139,6 +169,10 @@ export function wireEvents() {
       event.preventDefault();
       applyFleetSearch();
     }
+  });
+
+  $('#resetFiltersBtn')?.addEventListener('click', () => {
+    handleLocationChange('Alle locaties');
   });
 
   document.addEventListener('keydown', event => {
@@ -416,7 +450,9 @@ export function wireEvents() {
     showToast('Truck gemarkeerd als inactief.');
   });
 
-  $('#activityLocationFilter')?.addEventListener('change', renderActivity);
+  $('#activityLocationFilter')?.addEventListener('change', event => {
+    handleLocationChange(event.target.value);
+  });
   const applyActivitySearch = () => {
     renderActivity();
   };

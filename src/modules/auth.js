@@ -23,6 +23,7 @@ import { setMainTab } from './navigation.js';
 import { showToast } from './ui/toast.js';
 import { resolveEnvironment } from '../environment.js';
 import { TAB_LABELS } from './tabConfig.js';
+import { applyFiltersFromUrl } from './filterSync.js';
 
 const DEFAULT_LOGIN_EMAIL = 'test@motrac.nl';
 const DEFAULT_LOGIN_PASSWORD = 'test';
@@ -528,6 +529,11 @@ export async function handleAuthenticatedSession(session, { forceReload = false 
 
   if (allowedTabs.includes('vloot')) {
     populateLocationFilters();
+  }
+
+  applyFiltersFromUrl();
+
+  if (allowedTabs.includes('vloot')) {
     renderFleet();
   }
   if (allowedTabs.includes('activiteit')) {
