@@ -479,6 +479,13 @@ export function renderActivity() {
 }
 
 /**
+ * Public helper to refresh the activity overview after updates.
+ */
+export function refreshMeldingen() {
+  renderActivity();
+}
+
+/**
  * Adds a short fade animation to smooth the activity list transition.
  */
 function fadeActivityList(container) {
