@@ -772,14 +772,4 @@ export function wireEvents() {
     exportUsers('pdf');
   });
 
-  $('#moduleCycleBtn')?.addEventListener('click', () => {
-    const allowedTabs = Array.isArray(state.allowedTabs) ? state.allowedTabs : [];
-    if (allowedTabs.length <= 1) return;
-    const currentIndex = allowedTabs.indexOf(state.activeTab);
-    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % allowedTabs.length : 0;
-    const nextTab = allowedTabs[nextIndex];
-    if (nextTab && nextTab !== state.activeTab) {
-      switchMainTab(nextTab);
-    }
-  });
 }
