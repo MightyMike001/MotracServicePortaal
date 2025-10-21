@@ -500,7 +500,9 @@ h4 {
 .logo {
   height: 40px;
   width: auto;
+  max-width: 40px;
   display: block;
+  object-fit: contain;
 }
 
 .sub {
