@@ -787,6 +787,13 @@ h4 {
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+:root[data-theme="dark"] .hover\:bg-gray-50:hover,
+:root[data-theme="dark"] .focus-within\:bg-gray-50:focus-within,
+:root[data-theme="dark"] .focus\:bg-gray-50:focus {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: var(--color-text) !important;
+}
+
 @media (max-width: 600px) {
   .theme-toggle {
     right: 16px;
