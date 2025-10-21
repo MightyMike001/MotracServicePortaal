@@ -26,6 +26,15 @@
   color-scheme: light;
 }
 
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  overflow-y: scroll;
+}
+
 /* --- Application specific helpers ------------------------------------- */
 
 .tab-active {
