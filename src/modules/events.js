@@ -65,10 +65,75 @@ export function wireEvents() {
     renderActivity();
   });
 
+  const kebabMenuRepositioners = new WeakMap();
+
+  const cleanupKebabMenu = menu => {
+    const reposition = kebabMenuRepositioners.get(menu);
+    if (reposition) {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+      kebabMenuRepositioners.delete(menu);
+    }
+    menu.style.position = '';
+    menu.style.top = '';
+    menu.style.left = '';
+    menu.style.right = '';
+    menu.style.zIndex = '';
+    menu.style.marginTop = '';
+    menu.style.visibility = '';
+  };
+
+  const positionKebabMenu = (menu, trigger) => {
+    cleanupKebabMenu(menu);
+
+    const offset = 8;
+    const minPadding = 8;
+
+    menu.style.visibility = 'hidden';
+    menu.style.position = 'fixed';
+    menu.style.marginTop = '0';
+    menu.style.right = 'auto';
+
+    const ensureWithinViewport = () => {
+      const rect = trigger.getBoundingClientRect();
+      const menuWidth = menu.offsetWidth;
+      const menuHeight = menu.offsetHeight;
+
+      let top = rect.bottom + offset;
+      if (top + menuHeight > window.innerHeight - minPadding) {
+        const aboveTop = rect.top - offset - menuHeight;
+        if (aboveTop >= minPadding) {
+          top = aboveTop;
+        } else {
+          top = Math.max(minPadding, window.innerHeight - menuHeight - minPadding);
+        }
+      }
+
+      let left = rect.right - menuWidth;
+      if (left + menuWidth > window.innerWidth - minPadding) {
+        left = window.innerWidth - menuWidth - minPadding;
+      }
+      if (left < minPadding) {
+        left = minPadding;
+      }
+
+      menu.style.top = `${Math.round(top)}px`;
+      menu.style.left = `${Math.round(left)}px`;
+      menu.style.zIndex = '9999';
+      menu.style.visibility = '';
+    };
+
+    ensureWithinViewport();
+    window.addEventListener('resize', ensureWithinViewport);
+    window.addEventListener('scroll', ensureWithinViewport, true);
+    kebabMenuRepositioners.set(menu, ensureWithinViewport);
+  };
+
   function closeKebabMenus(except = null) {
     $$('.kebab-menu').forEach(menu => {
       if (menu !== except) {
         menu.classList.add('hidden');
+        cleanupKebabMenu(menu);
       }
     });
   }
@@ -302,6 +367,7 @@ export function wireEvents() {
       closeKebabMenus(menu);
       if (menu && shouldShow) {
         menu.classList.remove('hidden');
+        positionKebabMenu(menu, button);
       }
       return;
     }
